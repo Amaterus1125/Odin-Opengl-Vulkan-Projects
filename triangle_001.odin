@@ -1,4 +1,4 @@
-package THE_TARNISHED_TRIANGLE
+package main //package name must be main 
 import "vendor:glfw"
 import gl "vendor:OpenGL"
 main :: proc(){
@@ -6,7 +6,7 @@ main :: proc(){
    defer glfw.Terminate()
 //telling glfw we want an OPENGL 3.3 core profile context 
   glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR ,3)
-  glfw.WindowHind(glfw.CONTEXT_VERSION_MINOR ,3)
+  glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR ,3)
   glfw.WindowHint(glfw.OPENGL_PROFILE , glfw.OPENGL_CORE_PROFILE)
 
 win := glfw.CreateWindow(800 , 800 , "THE SCAPEGOAT LORD" ,nil,nil) //creating the window
@@ -19,7 +19,7 @@ gl.load_up_to(3,3,glfw.gl_set_proc_address) //load opengl 3.3 functions
 vertices :=[18]f32{
     0.0 , 0.5, 0.0 ,    0.58 , 0.0 , 0.83 , //top vertex with some color 
   -0.5 , -0.5 , 0.0 ,   0.55 , 0.0 , 0.0 , //bottom left - any color , basically yr screen is between 1 , 0 , -1 
-   -0.5 , -0.5 , 0.0 ,  0.22 , 1.0 , 0.08 ,  //bottom right with any color 
+   0.5 , -0.5 , 0.0 ,  0.22 , 1.0 , 0.08 ,  //bottom right with any color 
 }
 
 vao , vbo: u32 
@@ -35,7 +35,7 @@ stride := i32(6 * size_of(f32)) //each vertex takes 6floats (3 for position and 
 gl.VertexAttribPointer(0,3,gl.FLOAT, false , stride ,0)  //attribute 0 = position , starting at offset 0 
 gl.EnableVertexAttribArray(0)
 
-gl.VertexAttribPointer(1 ,3, gl.Float , stride , 3 * size_of(f32)) // attribute 1 for color , 3 floats , starting after the 3 position floats 
+gl.VertexAttribPointer(1 ,3, gl.FLOAT,false , stride , 3 * size_of(f32)) // attribute 1 for color , 3 floats , starting after the 3 position floats 
 gl.EnableVertexAttribArray(1)
 
 //vertex shader runs per vertex
@@ -52,12 +52,12 @@ void main(){
 
 //fragment shader runs once per pixel inside the triangle 
 //GPU interpolates vcolor between the 3 vertices and gives out a smooth gradient 
-frag_src = `version 330 core 
-in vec3 color;
-out vec4 FragColor'
+frag_src := `#version 330 core 
+in vec3 vColor;
+out vec4 FragColor;
 
 void main() {
-   FragColor = vec4(vColor , 1.0)
+   FragColor = vec4(vColor , 1.0);
 }`
 
 vs := gl.CreateShader(gl.VERTEX_SHADER)
@@ -68,7 +68,7 @@ gl.CompileShader(vs)
 fs := gl.CreateShader(gl.FRAGMENT_SHADER)
 src2 := cstring(raw_data(frag_src))
 gl.ShaderSource(fs , 1, &src2, nil)
-fl.CompileShader(fs)
+gl.CompileShader(fs)
 
 program := gl.CreateProgram() // programs are the linked pair of shaders we will draw with 
 gl.AttachShader(program , vs)
@@ -80,7 +80,7 @@ gl.DeleteShader(fs)
 
 //main loop runs once epr frame until window is closed 
 for !glfw.WindowShouldClose(win) { 
-    gl.ClearColor(1.0,1.0,1.0,1.0)  // set clear color to white 
+    gl.ClearColor(0.0,0.0,0.0,0.0)  // set clear color to white 
     gl.Clear(gl.COLOR_BUFFER_BIT) //clear the screen with that color
 
     gl.UseProgram(program)
@@ -90,4 +90,3 @@ for !glfw.WindowShouldClose(win) {
    glfw.PollEvents() //check for input events like the close button or resize ig
   }
 }
-
