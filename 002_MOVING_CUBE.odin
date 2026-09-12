@@ -22,7 +22,7 @@ glfw.WindowHint(glfw.OPENGL_PROFILE , glfw.OPENGL_CORE_PROFILE)
 
 win := glfw.CreateWindow( 800, 800, "PRISON REALM" , nil,nil)
 glfw.MakeContextCurrent(win)
-gl.load_up_to(4.5,glfw.gl_set_proc_address)
+gl.load_up_to(4, 6, glfw.gl_set_proc_address)
 gl.Enable(gl.DEPTH_TEST) // this will make sure that front of the cube covers the back (without this faces can be drawn in wrong rder and may look bad 
 
 /* Now we create the shader that decides where each corner of the cube goes to , unlike the traingle we don't need to send corner positions from our code this time
