@@ -17,9 +17,9 @@ gl.load_up_to(3,3,glfw.gl_set_proc_address) //load opengl 3.3 functions
 //each vertex has position (x,y,z) and color (r,g,b) packed together 
 //layout per vertex : x,y,z andd r,g,b
 vertices :=[18]f32{
-    0.0 , 0.5, 0.0 ,    1.0 , 0.0 , 0.0 , //top vertex with some color 
-  -0.5 , -0.5 , 0.0 ,   0.0 , 1.0 , 0.0 , //bottom left - any color , basically yr screen is between 1 , 0 , -1 
-   -0.5 , -0.5 , 0.0 ,  0.0 , 0.0 , 1.0 ,  //bottom right with any color 
+    0.0 , 0.5, 0.0 ,    0.58 , 0.0 , 0.83 , //top vertex with some color 
+  -0.5 , -0.5 , 0.0 ,   0.55 , 0.0 , 0.0 , //bottom left - any color , basically yr screen is between 1 , 0 , -1 
+   -0.5 , -0.5 , 0.0 ,  0.22 , 1.0 , 0.08 ,  //bottom right with any color 
 }
 
 vao , vbo: u32 
