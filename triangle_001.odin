@@ -18,7 +18,7 @@ gl.load_up_to(3,3,glfw.gl_set_proc_address) //load opengl 3.3 functions
 //layout per vertex : x,y,z andd r,g,b
 vertices :=[18]f32{
     0.0 , 0.5, 0.0 ,    0.58 , 0.0 , 0.83 , //top vertex with some color 
-  -0.5 , -0.5 , 0.0 ,   0.55 , 0.0 , 0.0 , //bottom left - any color , basically yr screen is between 1 , 0 , -1 
+  -0.5 , -0.5 , 0.0 ,   0.55 , 0.0 , 0.0 , //bottom left - any color , basically yr screen is between 1 , 0 , -1 // u can change the colors from here , no need for it to be all red blue and green 
    0.5 , -0.5 , 0.0 ,  0.22 , 1.0 , 0.08 ,  //bottom right with any color 
 }
 
@@ -80,7 +80,7 @@ gl.DeleteShader(fs)
 
 //main loop runs once epr frame until window is closed 
 for !glfw.WindowShouldClose(win) { 
-    gl.ClearColor(0.0,0.0,0.0,0.0)  // set clear color to white 
+    gl.ClearColor(0.0,0.0,0.0,0.0)  // set clear color to black , like the background color 
     gl.Clear(gl.COLOR_BUFFER_BIT) //clear the screen with that color
 
     gl.UseProgram(program)
