@@ -29,3 +29,44 @@ gl.BindVertexArray(vao)  //start recording into this vao
 gl.BindBuffer(gl.ARRAY_BUFFER ,vbo) // this vbo is now the active array buffer 
 gl.BufferData(gl.ARRAY_BUFFER , size_of(vertices) , &vertices , gl.STATIC_DRAW) // upload vertex data to the gpu 
 
+
+stride := i32(6 * size_of(f32)) //each vertex takes 6floats (3 for position and 3 for color)
+
+gl.VertexAttribPointer(0,3,gl.FLOAT, false , stride ,0)  //attribute 0 = position , starting at offset 0 
+gl.EnableVertexAttribArray(0)
+
+gl.VertexAttribPointer(1 ,3, gl.Float , stride , 3 * size_of(f32)) // attribute 1 for color , 3 floats , starting after the 3 position floats 
+gl.EnableVertexAttribArray(1)
+
+//vertex shader runs per vertex
+//takes in position + coloe , outputs position which is required and passess color onwards 
+vertex_srcc := `#version 330 core 
+layout(location =0) in vec3 aPos;
+layout(location =1) in vec3 aColor;
+out vec3 vColor;
+
+void main(){
+   gl_Position = vec4(aPos ,1.0);
+   vColor = aColor ;
+}`
+
+//fragment shader runs once per pixel inside the triangle 
+//GPU interpolates vcolor between the 3 vertices and gives out a smooth gradient 
+frag_src = `version 330 core 
+in vec3 color;
+out vec4 FragColor'
+
+void main() {
+   FragColor = vec4(vColor , 1.0)
+}`
+
+vs := gl.CreateShader(gl.VERTEX_SHADER)
+src1 := cstring(raw_data(vertex_srcc))
+gl.ShaderSource(vs , 1, &src1 , nil)
+gl.CompileShader(vs)
+
+fs := gl.CreateShader(gl.FRAGMENT_SHADER)
+src2 := cstring(raw_data(frag_src))
+gl.ShaderSource(fs , 1, &src2, nil)
+fl.CompileShader(fs)
+
