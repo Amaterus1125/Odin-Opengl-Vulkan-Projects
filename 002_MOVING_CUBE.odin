@@ -8,7 +8,7 @@ that is -- the matrix that moves/rotates/zooms our cube
         -- a on/off switch (0 or 1) that says draw lines only or draw fileld 
 */
 PerFrameData :: struct {
-    mvp:     matrix[4.4]f32 , //where is the cube right now math is done by this 
+    mvp:     matrix[4,4]f32 , //where is the cube right now math is done by this 
     is_wireframe : i32 , }      // 0 = normal cube , 1 = outline only 
 
 main :: proc() {
@@ -22,7 +22,7 @@ glfw.WindowHint(glfw.OPENGL_PROFILE , glfw.OPENGL_CORE_PROFILE)
 
 win := glfw.CreateWindow( 800, 800, "PRISON REALM" , nil,nil)
 glfw.MakeContextCurrent(win)
-gl.load_up_to(4,5,glfw.gl_set_proc_address)
+gl.load_up_to(4.5,glfw.gl_set_proc_address)
 gl.Enable(gl.DEPTH_TEST) // this will make sure that front of the cube covers the back (without this faces can be drawn in wrong rder and may look bad 
 
 /* Now we create the shader that decides where each corner of the cube goes to , unlike the traingle we don't need to send corner positions from our code this time
@@ -40,7 +40,7 @@ layout (location =0) out vec3 color;
 //the 8 corner points of the cube 
 const vec3 pos[8] = vec3[8](
     vec3(-1.0,-1.0,1.0) , vec3(1.0,-1.0,1.0) , vec3(1.0 , 1.0,1.0) , vec3(-1.0,1.0,1.0),
-    vec3(-1.0,-1.0 , -1.0) , vec3(1.0,-1.0,1.0) , vec3(1.0 , 1.0 , -1.0) , vec3(-1.0 , 1.0 , -1.0)
+    vec3(-1.0,-1.0 , -1.0) , vec3(1.0,-1.0,-1.0) , vec3(1.0 , 1.0 , -1.0) , vec3(-1.0 , 1.0 , -1.0)
 );
 
 //one color for each 8 corners -- gold color hehe
@@ -53,10 +53,11 @@ const vec3 col[8] = vec3[8](
 //this list just says "which 3 corners make each triangle" 
 const int indices[36] = int[36](
    0,1,2, 2,3,0, //front face 
-   1,5,6 , 6,2,1, //right face
-  7,6,5,  5,4,7, //back face 
-   4,0,3 , 3,7,4,  //bottom face
-  3,2,6 , 6,7,3  //top face 
+   1,5,6, 6,2,1, //right face
+   7,6,5, 5,4,7, //back face 
+   4,0,3, 3,7,4, //left face
+   4,5,1, 1,0,4, //bottom face
+   3,2,6, 6,7,3  //top face 
 );
 
 void main() {
@@ -67,6 +68,7 @@ int idx = indices[gl_VertexID];
 gl_Position = MVP * vec4(pos[idx],1.0);
 // if we are in outline mode , just make everything black ,other wise use the normal color
 color = isWireFrame > 0 ? vec3(0.0) : col[idx];
+}`
 
 //this shader just colors in each pixel using whatever color came from above 
 frag_src := `#version 460 core 
@@ -104,13 +106,13 @@ gl.BindVertexArray(vao)
 buf_size := size_of(PerFrameData)
 per_frame_buf: u32
 gl.CreateBuffers(1 , &per_frame_buf)    // create it 
-hl.NamedBufferStorage(per_frame_buf , buf_size , nil , gl.DYNAMIC_STORAGE_BIT)   // set aside space for it on the gpu (empty for now)
+gl.NamedBufferStorage(per_frame_buf , buf_size , nil , gl.DYNAMIC_STORAGE_BIT)   // set aside space for it on the gpu (empty for now)
 gl.BindBufferRange(gl.UNIFORM_BUFFER, 0,per_frame_buf , 0 , buf_size) //connect it to shader setting box ( binding =0 )
 
 for !glfw.WindowShouldClose(win) {
      width , height := glfw.GetFramebufferSize(win)
      gl.Viewport(0,0,width , height)
-     gl.ClearColoe(0.1,0.1,0.1,1.0)
+     gl.ClearColor(0.1,0.1,0.1,1.0)
      gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT) // wipe both the pictures and the depth info from last frame
 
    // next lines will be work out where the cube should be of this frame 
@@ -119,7 +121,7 @@ for !glfw.WindowShouldClose(win) {
 
 aspect := f32(width) / f32(height)
 p := linalg.matrix4_perspective_f32(linalg.to_radians(f32(60.0)), aspect, 0.1, 100.0)
-translate := linalg.matrix4_translate_f32({0.0,0.0,-3.5)}  // push the cube back so we can see it 
+translate := linalg.matrix4_translate_f32({0.0,0.0,-3.5}) // push the cube back so we can see it 
 rotate := linalg.matrix4_rotate_f32(f32(glfw.GetTime()), {1.0,1.0,1.0}) //spin it over timeee
 m := translate * rotate
 
@@ -144,7 +146,7 @@ glfw.PollEvents() // check if user closed the window etc
 }
 gl.DeleteBuffers(1 , &per_frame_buf)  // the cleanup
 gl.DeleteVertexArrays(1, &vao)
-gl.Deleterogram(program)
+gl.DeleteProgram(program)
 }
 
 
