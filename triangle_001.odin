@@ -1,4 +1,4 @@
-package main 
+package THE_TARNISHED_TRIANGLE
 import "vendor:glfw"
 import gl "vendor:OpenGL"
 main :: proc(){
@@ -9,7 +9,7 @@ main :: proc(){
   glfw.WindowHind(glfw.CONTEXT_VERSION_MINOR ,3)
   glfw.WindowHint(glfw.OPENGL_PROFILE , glfw.OPENGL_CORE_PROFILE)
 
-win := glfw.CreateWindow(800 , 800 , "TRIANGLE LORD" ,nil,nil) //creating the window
+win := glfw.CreateWindow(800 , 800 , "THE SCAPEGOAT LORD" ,nil,nil) //creating the window
 glfw.MakeContextCurrent(win)  // make this window context active 
 gl.load_up_to(3,3,glfw.gl_set_proc_address) //load opengl 3.3 functions 
 
@@ -69,4 +69,25 @@ fs := gl.CreateShader(gl.FRAGMENT_SHADER)
 src2 := cstring(raw_data(frag_src))
 gl.ShaderSource(fs , 1, &src2, nil)
 fl.CompileShader(fs)
+
+program := gl.CreateProgram() // programs are the linked pair of shaders we will draw with 
+gl.AttachShader(program , vs)
+gl.AttachShader(program , fs)
+gl.LinkProgram(program)
+
+gl.DeleteShader(vs) //no longer linked into the program to later save gpu memory 
+gl.DeleteShader(fs)
+
+//main loop runs once epr frame until window is closed 
+for !glfw.WindowShouldClose(win) { 
+    gl.ClearColor(1.0,1.0,1.0,1.0)  // set clear color to white 
+    gl.Clear(gl.COLOR_BUFFER_BIT) //clear the screen with that color
+
+    gl.UseProgram(program)
+    gl.BindVertexArray(vao)
+    gl.DrawArrays(gl.TRIANGLES , 0, 3) //draw 3 vertices as a 1 triangle 
+   glfw.SwapBuffers(win) // show the frame we just drew 
+   glfw.PollEvents() //check for input events like the close button or resize ig
+  }
+}
 
