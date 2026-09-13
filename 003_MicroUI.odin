@@ -31,7 +31,7 @@ UI :: struct {
    ctx:  mu.Context,  //microui own internal state ( focus, layout , etc)
    program: u32,  // our 32 bit shader program for drawing gui shapes 
    vao , vbo , ebo : u32, // gpu buffers for the GUI shapes 
-   atlas_text: u32,   //one image containing font and a few icons if needed 
+   atlas_tex: u32,   //one image containing font and a few icons if needed 
 
 /* now creating things for -- everyframe we collect ,all the little rectangles/text into these lists first ,
 then send them to the gpu all at once (much faster then sending them one by one */
@@ -45,7 +45,7 @@ win_width , win_height: i32 = 800, 600 // for updating each frame for the window
 
 main :: proc() {
  glfw.Init()
- defer glfwTerminate()
+ defer glfw.Terminate()
 
  glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR,3)
  glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR , 3)
@@ -53,7 +53,7 @@ main :: proc() {
 
  window := glfw.CreateWindow(win_width , win_height , "ODIN's EYE" , nil , nil)
  glfw.MakeContextCurrent(window)
- gl.load_up_to(3,3,glfw.gl.set_proc_address)
+ gl.load_up_to(3,3,glfw.gl_set_proc_address)
 
 //now hooking up the mouse, keyboard and scrool events , setting callback procs near the bottom of the file 
 glfw.SetCursorPosCallback(window, cursor_pos_callback)
@@ -65,7 +65,7 @@ glfw.SetCharCallback(window, char_callback)
 ui_init()
 
 //now a couple of variable our little demo GUI will let us control 
-bg_color := mu.Color{90,95,100,255)
+bg_color := mu.Color{90,95,100,255}
 show_box:= true
 
 for !glfw.WindowShouldClose(window) {
@@ -79,11 +79,11 @@ for !glfw.WindowShouldClose(window) {
 //right now microui compares it to the last frame to figure out like what changes , hovering or clicking 
 
 mu.begin(&ui.ctx)
-if mu.window(&ui.ctx . "THE EYE" . {50, 50 , 300 , 200}) {
+if mu.window(&ui.ctx , "THE EYE" , {50, 50 , 300 , 200}) {
  mu.layout_row(&ui.ctx , {-1} , 0)  //-1 means use the full width , & is the pointer initiator 
  mu.label(&ui.ctx , "THE ODIN EYE WAS POKED")
 
- if .SUBMIT in mu.button(&ui.ctx , "SHOW THE POKED EYE" , &show_box) {
+ if .SUBMIT in mu.button(&ui.ctx , "POKE THE EYE") {
    fmt.println("THE EYE WAS POKED") 
 }
 
@@ -94,8 +94,8 @@ if mu.window(&ui.ctx . "THE EYE" . {50, 50 , 300 , 200}) {
  mu.label(&ui.ctx , "INNER EYE:" )
 mu.layout_row(&ui.ctx, {-1} , 0)
 bg_slider(&ui.ctx , &bg_color.r)
-bg_slider(&ui.ctx , 7bg_color.g)
-bg_slider(&ui.ctx , 7bg_color.b)
+bg_slider(&ui.ctx , bg_color.g)
+bg_slider(&ui.ctx , bg_color.b)
 }
 mu.end(&ui.ctx)
 
@@ -193,8 +193,8 @@ vs := gl.CreateShader(gl.VERTEX_SHADER)
 gl.GenTextures(1,&ui.atlas_tex)
 gl.BindTexture(gl.TEXTURE_2D, ui.atlas_tex)
 gl.TexImage2D(
-   fl.TEXTURE_2D , 0 , gl.R8,
-   mu.DEFAULT_ATLAS_WIDTH , mu,DEFAULT_ATLAS_HEIGHT, 0 ,
+   gl.TEXTURE_2D , 0 , gl.R8,
+   mu.DEFAULT_ATLAS_WIDTH , mu.DEFAULT_ATLAS_HEIGHT, 0 ,
    gl.RED , gl.UNSIGNED_BYTE, &mu.default_atlas_alpha, )
 
 gl.TexParameteri(gl.TEXTURE_2D , gl.TEXTURE_MIN_FILTER, gl.NEAREST)
@@ -210,7 +210,6 @@ ui.ctx.text_height = mu.default_atlas_text_height
 ui_push_quad :: proc(dst , src: mu.Rect , color:mu.Color) {
    idx := u32(len(ui.verts))
    atlas_w , atlas_h := f32(mu.DEFAULT_ATLAS_WIDTH) , f32(mu.DEFAULT_ATLAS_HEIGHT)
-   atlas_w, atlas_h := f32(mu.DEFAULT_ATLAS_WIDTH), f32(mu.DEFAULT_ATLAS_HEIGHT)
 	u0, v0 := f32(src.x) / atlas_w, f32(src.y) / atlas_h
 	u1, v1 := f32(src.x + src.w) / atlas_w, f32(src.y + src.h) / atlas_h
 
