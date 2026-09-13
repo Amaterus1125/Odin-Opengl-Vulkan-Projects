@@ -66,6 +66,7 @@ No rush, no shortcuts — just steady reps and shipping small working things.
 |---|---|
 | `001_TRIANGLE.odin` | first window + a triangle with interpolated RGB colors |
 | `002_MOVING_CUBE.odin` | rotating 3D cube using an MVP matrix + wireframe overlay |
+| `003_MicroUI.odin` | the GUI for the game engines to control different things |
 | *(more added as I build them)* | |
 
 Each `.odin` file is runnable directly:
