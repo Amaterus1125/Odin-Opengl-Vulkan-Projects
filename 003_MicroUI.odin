@@ -191,8 +191,11 @@ vs := gl.CreateShader(gl.VERTEX_SHADER)
 	gl.BindBuffer(gl.ARRAY_BUFFER, ui.vbo)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ui.ebo)
 
-/* 
-
+/* this tells opengl exactly how to interpret the raw bytes of each UI_Vertex struct in the VBO 
+Attribute 0 -- a_pos , 2 floats , starting at byte offset offset_of(UI_Vertex, pos) (which is 0) and stride = size_of(UI_Vertex) , stride is the byte distance between consicutive vertices 
+Attribute 1 -- a_uv , 2 floats , offset is whatever tex sits in the struct 
+Attribute 2 -- a_col , 4 unsigned bytes , true for normalized -- meaning opengl will divide each byte by 255 to map into the 0.0 and 1.0 automatically before it reaches the shader as a vec4
+*/
 
 	gl.EnableVertexAttribArray(0)
 	gl.EnableVertexAttribArray(1)
@@ -203,7 +206,7 @@ vs := gl.CreateShader(gl.VERTEX_SHADER)
 
 //now microui comes with built in small font + a few icons , already baked into one single image (atlas)
 //we just need to upload it to the gpu once 
-
+//creates a texture and uploads microui built in font + icon atlas image into a single channel(R8/RED) 8 bit textured sized 
 gl.GenTextures(1,&ui.atlas_tex)
 gl.BindTexture(gl.TEXTURE_2D, ui.atlas_tex)
 gl.TexImage2D(
@@ -211,25 +214,32 @@ gl.TexImage2D(
    mu.DEFAULT_ATLAS_WIDTH , mu.DEFAULT_ATLAS_HEIGHT, 0 ,
    gl.RED , gl.UNSIGNED_BYTE, &mu.default_atlas_alpha, )
 
+// NEAREST filtering (no smoothing/blur when scales) - appropiate for small fonts
 gl.TexParameteri(gl.TEXTURE_2D , gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 
 // telling the microui itself how wide / tall its built in font characters are , so it can lay out the text correctly 
+//initializes microui context , and teels it which functions to call to measure text based on the same built in atlas glyph metrics
 mu.init(&ui.ctx)
 ui.ctx.text_width = mu.default_atlas_text_width
 ui.ctx.text_height = mu.default_atlas_text_height
 }
 
 // now adding one rectangle (as 2 triangles) to this frame's batch of shapes to draw 
+// dst -- where on screen to draw (pixel rect) , src = which region of theatlas texture to sample from , idx = records the current vertex count needed to correctly offset the 4 new indices we are about to add 
 ui_push_quad :: proc(dst , src: mu.Rect , color:mu.Color) {
    idx := u32(len(ui.verts))
+// converts the atlas source rectangle from pixel coordinates into normalized UV coordinates which is what GPU texture sampling expects , (u0,v0) is top left corner of region and (u1,v1) s the bottom right 
    atlas_w , atlas_h := f32(mu.DEFAULT_ATLAS_WIDTH) , f32(mu.DEFAULT_ATLAS_HEIGHT)
 	u0, v0 := f32(src.x) / atlas_w, f32(src.y) / atlas_h
 	u1, v1 := f32(src.x + src.w) / atlas_w, f32(src.y + src.h) / atlas_h
 
+//converts the destination rect into its two opposite corner points in screen pixel space 
 	x0, y0 := f32(dst.x), f32(dst.y)
 	x1, y1 := f32(dst.x + dst.w), f32(dst.y + dst.h)
 
+
+//appends 4 vertices , one per corner of the quad , each paired with its matching uv corner and shared color , then appends 6 indices describing two triangles thar make up the wuad
 	col := [4]u8{color.r, color.g, color.b, color.a}
     append(&ui.verts,
 		UI_Vertex{{x0, y0}, {u0, v0}, col},
@@ -240,18 +250,20 @@ ui_push_quad :: proc(dst , src: mu.Rect , color:mu.Color) {
 	append(&ui.indices, idx, idx + 1, idx + 2, idx, idx + 2, idx + 3)
 }
 
-
+// if nothing to draw skip 
 ui_flush :: proc() {
 	if len(ui.indices) == 0 {
 		return
 	}
+
+// uploads the entire accumulated verts/indices arrays to the gpu buffers in one call each(BufferData), using STREAM_DRAW as a usage hint , then DrawElements issues a single draw call rendering all the batched triangles at once 
 	gl.BindVertexArray(ui.vao)
 	gl.BindBuffer(gl.ARRAY_BUFFER, ui.vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(ui.verts) * size_of(UI_Vertex), raw_data(ui.verts), gl.STREAM_DRAW)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ui.ebo)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(ui.indices) * size_of(u32), raw_data(ui.indices), gl.STREAM_DRAW)
 	gl.DrawElements(gl.TRIANGLES, i32(len(ui.indices)), gl.UNSIGNED_INT, nil)
-
+// empties the batch arrays(without freeing the underlying memory- clear array resents the len to 0) so the next batch starts fresh
 	clear(&ui.verts)
 	clear(&ui.indices)
 }
