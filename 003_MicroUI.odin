@@ -275,7 +275,7 @@ ui_flush :: proc() {
 // each instruction into actual triangles on screen
 /* enables alpha blending with the standart "over" formula so text edges and translucent UI elements composire correctyl
 also disables the depth testing and gui is drawn flat . back to front in command order , no 3d depth comparisons needed 
-also enables the scissor testing , lets later gl.Scissors() calls clip drawing to a rectangle , used to restrict a window's content to inside its own border 
+also enables the scissor testing , lets later gl.Scissors() calls clip drawing to a rectangle , used to restrict a window's content to inside its own border */
 ui_render :: proc() {
 	gl.Enable(gl.BLEND)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) // lets semi-transparent ui edges blend nicely
