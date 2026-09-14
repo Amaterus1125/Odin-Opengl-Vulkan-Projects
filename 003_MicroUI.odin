@@ -1,3 +1,7 @@
+// THE CODE IS ONLY BIG BC I USED MICROUI WHICH NEEDS IT OWN RENDERER AND MANY OTHER STUFF
+// USE DEAR ImGUI FOR EASIER EXPERIENCE AND CONTROL OVER ALL THESE THINGS 
+
+
 package main 
 
 import "base:runtime"
@@ -269,17 +273,21 @@ ui_flush :: proc() {
 }
 // walks through everything microui wants drawn this frame, and turns
 // each instruction into actual triangles on screen
+/* enables alpha blending with the standart "over" formula so text edges and translucent UI elements composire correctyl
+also disables the depth testing and gui is drawn flat . back to front in command order , no 3d depth comparisons needed 
+also enables the scissor testing , lets later gl.Scissors() calls clip drawing to a rectangle , used to restrict a window's content to inside its own border 
 ui_render :: proc() {
 	gl.Enable(gl.BLEND)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) // lets semi-transparent ui edges blend nicely
 	gl.Disable(gl.DEPTH_TEST)                          // ui is always flat, depth doesn't apply
 	gl.Enable(gl.SCISSOR_TEST)                         // lets us clip a window's contents to its own box
-
+//binds the font atlas to texture unit 0 and activates our shader program
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, ui.atlas_tex)
 	gl.UseProgram(ui.program)
 
 // a flat 2D "camera" -- just maps pixel coordinates directly to the screen
+//important -- builds an orthographic projection matric by hand, mapping pixel coordinates directly onto the screen , the matrix makes sure that ui is not drawn upside down 
 	l, r := f32(0), f32(win_width)
 	b, t := f32(win_height), f32(0)
 	proj := [16]f32 {
@@ -288,11 +296,14 @@ ui_render :: proc() {
 		0, 0, -1, 0,
 		-(r + l) / (r - l), -(t + b) / (t - b), 0, 1,
 	}
+
+looks up and sets the two uniforms in the shader, the projection matrix and which texture unit to smaple from
 	loc := gl.GetUniformLocation(ui.program, "u_proj")
 	gl.UniformMatrix4fv(loc, 1, false, &proj[0])
 	tex_loc := gl.GetUniformLocation(ui.program, "u_tex")
 	gl.Uniform1i(tex_loc, 0)
 
+//iterates through the microui list of recorded draw commands for this frame , means not every possible variant needs a case , unhandles ones are ignored 
 	command: ^mu.Command
 	for variant in mu.next_command_iterator(&ui.ctx, &command) {
 		#partial switch cmd in variant {
@@ -322,10 +333,10 @@ ui_render :: proc() {
 	gl.Scissor(0, 0, win_width, win_height) // reset clipping back to the whole screen
 }
 
-// ============================================================
+
 // INPUT CALLBACKS -- GLFW calls these automatically, we just forward
 // the info into microui's input system
-// ============================================================
+//read microui docs , pretty basic , to know more abt the below ones 
 
 cursor_pos_callback :: proc "c" (window: glfw.WindowHandle, x, y: f64) {
 	context = runtime.default_context()
