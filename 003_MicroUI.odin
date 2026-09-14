@@ -173,6 +173,7 @@ vs := gl.CreateShader(gl.VERTEX_SHADER)
 	gl.ShaderSource(fs, 1, &src2, nil)
 	gl.CompileShader(fs)
 
+//creates a program object , attaches both shader stages , links them into one usable pipeline , the indivitual shader objects can then be deleted and program keeps the copy of the compiled code 
 	ui.program = gl.CreateProgram()
 	gl.AttachShader(ui.program, vs)
 	gl.AttachShader(ui.program, fs)
@@ -180,6 +181,8 @@ vs := gl.CreateShader(gl.VERTEX_SHADER)
 	gl.DeleteShader(vs)
 	gl.DeleteShader(fs)
 
+// allocates and bindes the vao (vertex array object) to vbo( will hold vertex data for the framebuffer) and ebo(will hold the triangle indices) 
+//binding happens once here , the actual data is updated every frame in ui_flush
 	gl.GenVertexArrays(1, &ui.vao)
 	gl.GenBuffers(1, &ui.vbo)
 	gl.GenBuffers(1, &ui.ebo)
@@ -187,6 +190,9 @@ vs := gl.CreateShader(gl.VERTEX_SHADER)
 	gl.BindVertexArray(ui.vao)
 	gl.BindBuffer(gl.ARRAY_BUFFER, ui.vbo)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ui.ebo)
+
+/* 
+
 
 	gl.EnableVertexAttribArray(0)
 	gl.EnableVertexAttribArray(1)
