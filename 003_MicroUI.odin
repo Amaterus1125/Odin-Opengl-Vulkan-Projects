@@ -126,6 +126,10 @@ bg_slider :: proc(ctx: ^mu.Context, channel: ^u8) {
 
 // now doing the main stuff , setting up the gui renderer , we don't do this in Imgui but in microgui we have to do it 
 
+//takes in three attributes per vertex , position , uv texture for microui , color at the attribute locations 0 , 1 and 2 , these must match the VertexAttributePointer calls later
+//then passed to fragment shader later on and location must be matched 
+//u_proj is a projection matrix uniform , that converts pixel coordinates into opengl normalizes device coordinates(-1 to 1)
+
 ui_init :: proc() {
 	// this shader just takes 2D points and colors them in, nothing fancy.
 	// UI is always flat/2D, so there's no camera or 3D math needed here.
@@ -142,6 +146,10 @@ void main() {
 	v_col = a_col;
 }`
 
+
+/* the font/icon atlas is a single channled image (red only i.e. R8) storing just brightness and coverage , 
+this shader reads that single red channel as an alpha mask and multiplies into the vertex color alpha , so white text tinted red jsut becomes red 
+glyph shapes with the atlas defining there coverage/ anti-aliasing */
 	fragment_src := `#version 330 core
 in vec2 v_uv;
 in vec4 v_col;
@@ -154,7 +162,7 @@ void main() {
 	out_color = vec4(v_col.rgb, v_col.a * alpha);
 }`
 
-
+// compiling and linking shaders object as cstrings used in odin , same we will do for the fragment shader too we just created 
 vs := gl.CreateShader(gl.VERTEX_SHADER)
 	src1 := cstring(raw_data(vertex_src))
 	gl.ShaderSource(vs, 1, &src1, nil)
