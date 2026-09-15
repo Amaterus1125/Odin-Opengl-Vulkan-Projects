@@ -1,9 +1,11 @@
 // the basic imports we have to do everytime
 
+// PLS PUT THE BIN FILE WITH THE GLTF MODEL FILE FOR IT TO LOAD , BC THE BIN FILE CONTAINS THE JSON DATA FOR THE BUFFER
+
 package main
 
 import "core:fmt"
-import "core"math/linalg"
+import "core:math/linalg"
 import "vendor:glfw"
 import gl "vendor:OpenGL"
 import cgltf "vendor:cgltf"
@@ -18,7 +20,7 @@ PerFrameData :: struct {
   mvp: matrix[4,4]f32,
 }
 
-main :: proc{} {
+main :: proc() {
       glfw.Init() 
       defer glfw.Terminate() 
       glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 4)
@@ -31,8 +33,8 @@ main :: proc{} {
 	   gl.Enable(gl.DEPTH_TEST)
 
 // loading the model file 
-options := cgltf.options // leave this zeroed/default , we don't need any specific settings 
-data , parse_result := cgltf.parse_file(options, "data/Assets/Avocado.gltf")
+options : cgltf.options // leave this zeroed/default , we don't need any specific settings 
+data , parse_result := cgltf.parse_file(options, "Avocado.gltf")
 if parse_result != .success {
        fmt.println("FAILED TO FIND THE PARSED GLTF FILE:" , parse_result)
        return
@@ -42,7 +44,7 @@ defer cgltf.free(data)  // free the loaded model data once main() ends
 /* Parsing only reads the JSON structure of the file , the actual raw vertex numbers and fragment shader lives 
 in a seperate binary buffers that will still nees to load in as a second step */
 
-load_result := cgltf.load_buffers(options , data , "data/Assets/Avocado.gltf")
+load_result := cgltf.load_buffers(options , data , "Avocado.gltf")
 if load_result != .success {
    fmt.println("FAILED TO LOAD THE GLTF BUFFERS:", load_result)
    return
@@ -64,21 +66,21 @@ for attr in prim.attributes {
 
 if prim.indices != nil {
  /* the model must have an index list ( most of them do) walk through it and for each index look up that vertex actual xyz position 
-this flattens everything into one long triangle list and uses a manual face flattening loop 
-imdex_count := prim.indices.count 
+this flattens everything into one long triangle list and uses a manual face flattening loop  */
+index_count := prim.indices.count 
 for i in 0 ..< index_count {
     idx := cgltf.accessor_read_index(prim.indices , i) 
     v : [3]f32 
     ok := cgltf.accessor_read_float(pos_accessor , idx , &v[0] , 3)
     if !ok {
-       countinue    //skip this vertex if reading it somehow failed 
+       continue    //skip this vertex if reading it somehow failed 
  }
-  append(&positions , [3]f32{v.x,v.z,v.y})
+  append(&positions , [3]f32{v.x,v.y,v.z})
 }
-
+}
 // UPLOAD THE POSITIONS TO THE GPU 
-vertices := i32(len(positions)) 
-println("LOADED" , num_vertices , "VERTICES")
+num_vertices := i32(len(positions)) 
+fmt.println("LOADED" , num_vertices , "VERTICES")
 
 vao: u32
 	gl.GenVertexArrays(1, &vao)
@@ -137,8 +139,12 @@ void main() {
 
 		aspect := f32(width) / f32(height)
 		p := linalg.matrix4_perspective_f32(linalg.to_radians(f32(60.0)), aspect, 0.1, 100.0)
-		view := linalg.matrix4_translate_f32({0.0, -0.3, -3.0}) // pull the camera back so the model is in view
-		mvp := p * view
+		view := linalg.matrix4_translate_f32({0.0, -3.0, -12.0}) // pull the camera back so the model is in view
+		
+        // to make it spin on its own hehe
+        time := f32(glfw.GetTime())
+		model := linalg.matrix4_rotate_f32(time, {0.0, 1.0, 0.0})
+		mvp := p * view * model
 
 		frame_data := PerFrameData{mvp = mvp}
 		gl.NamedBufferSubData(per_frame_buf, 0, size_of(PerFrameData), &frame_data)
@@ -162,7 +168,6 @@ void main() {
 	gl.DeleteVertexArrays(1, &vao)
 	gl.DeleteProgram(program)
 }
-
 
 
 
