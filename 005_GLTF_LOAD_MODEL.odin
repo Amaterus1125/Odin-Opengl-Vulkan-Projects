@@ -1,8 +1,8 @@
 // the basic imports we have to do everytime
 
 // PLS PUT THE BIN FILE WITH THE GLTF MODEL FILE FOR IT TO LOAD , BC THE BIN FILE CONTAINS THE JSON DATA FOR THE BUFFER
-// THE ODIN FILE , THE BIN FILE AND THE GLTF MODEL FILE MUST BE IN SAME DIRECTORY FOR THIS CODE TO WORK 
-// YOU CAN EDIT LINE NO. 38 AND 48 TO CHANGE THEM
+//FIXED THE WIREFRAME ISSUE
+
 package main
 
 import "core:fmt"
@@ -104,9 +104,10 @@ void main() {
 }`
 
 	fragment_src := `#version 460 core
+layout (location = 1) uniform vec4 u_color;
 out vec4 out_color;
 void main() {
-	out_color = vec4(1.0, 0.7, 0.2, 1.0); // a plain yellow color for every pixel
+	out_color = u_color; 
 }`
 
 	vs := gl.CreateShader(gl.VERTEX_SHADER)
@@ -155,9 +156,11 @@ void main() {
 
 		// same two-pass trick as the book: solid fill, then wireframe on top
 		gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
+		gl.Uniform4f(1, 1.0, 0.7, 0.2, 1.0) // Set solid color to yellow
 		gl.DrawArrays(gl.TRIANGLES, 0, num_vertices)
 
 		gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+		gl.Uniform4f(1, 0.0, 0.0, 0.0, 1.0) // Set wireframe color to black
 		gl.DrawArrays(gl.TRIANGLES, 0, num_vertices)
 
 		glfw.SwapBuffers(window)
