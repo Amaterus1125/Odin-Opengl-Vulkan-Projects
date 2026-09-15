@@ -78,7 +78,7 @@ for !glfw.WindowShouldClose(window) {
   // part 2 of a frame work 
   part_start = profile_start() 
   time.sleep(2 * time.Millisecond) 
-  profile_wnd("NORM 2" , part_start)
+  profile_end("NORM 2" , part_start)
 
  // timing glfw event checking specifically 
  part_start = profile_start()
