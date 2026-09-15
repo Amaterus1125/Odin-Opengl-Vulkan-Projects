@@ -95,3 +95,28 @@ gl.DeleteShader(shader_vertex)
 gl.DeleteShader(shader_fragment)
 gl.DeleteBuffers(1 , &per_frame_data_buffer)
 }
+
+/* now next parts turns everything we have logges into one big blobk of text and saves it to a file , we are keeping it 
+as plain text , so any text editor can open it easily */
+
+dump_profile_to_file :: proc(path: string) {
+ sb: [dynamic]u8 // sb = string builder function and we build up our text one line at a time to do this 
+defer delete(sb) //free the memory once the function is done
+
+for entry in profile_log {
+ //turns one entry into a line of text , like NORM 1 - 2.1 ms 
+  line := fmt.aprintf("%s: %v\n" , entry.name , entry.duration)
+  defer delete(line) // free this specific line from memory once we are done using it below 
+  append(&sb , ..transmute([]u8)line) // add this lines bytes to the end of our growing text block  
+}
+
+//try to save this text block as a real file on the disk 
+//error handling 
+
+err := os.write_entire_file(path , sb[:])
+if err != nil {
+     fmt.eprintln("failed to write profile dump:", err) // eprintln = print as an error message
+	} else {
+		fmt.println("wrote profiling results to", path)
+	}
+}
