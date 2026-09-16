@@ -40,9 +40,33 @@ ONE-TIME BUILD STEPS (before odin run will work) -
             etc2comp/EtcTool/EtcFile.o etc2comp/EtcTool/EtcFileHeader.o \
             <the rest of Etc2Comp's compiled .o files>
 
-3. Point the `foreign import` line below at wherever that .a/.lib/.so
+3. Point the foreign import line below at wherever that .a/.lib/.so
   ends up, and make sure it's on your linker's search path.
 */
 
+import "core:fmt"
+import "core:os"
 
+//THE below decleration has to match etc2comp_bridge.h exactly  -  same argument types ,same calling convention , bc there are no type checking across an FFI boundry
+
+foreign import bridge "libetc2bridge.a" //swap with whatever u built in step 2/3 above 
+//loads the jpeg path via stb_image and converts into ETC2 RGB8 and writes a ktx file into ktxpath , returns 0 on success
+foreign bridge {
+   etc2_convert_to_ktx :: proc(jpgPath : cstring, ktxPath:cstring) -> i32 --- 
+}
+
+main :: proc() {
+   input : cstring = "filename"
+   output : cstring = 'image.ktx"
+fmt.printfln("Encoding %s -> %s (ETC2 RGB8, BT.709 error metric)...", input, output)
+result := etc2_convert_to_ktx(input, output)
+if result == 0 {
+		fmt.println("Done - image.ktx can be loaded straight into an OpenGL or Vulkan texture object.")
+	} else {
+		fmt.eprintln("Encoding failed - check that the input image exists and stb_image can read it.")
+		os.exit(1)
+	}
+}
+
+  
 
