@@ -105,3 +105,24 @@ for i in 0 ..< item_count{
 	}
 fmt.println(handle, "}")
 }
+
+main :: proc() { 
+   // by default; core:sys/info's cpu_core_count() is the Odin equivalent, returning both physical and logical (hyperthreaded) core counts.
+thread_count := 4 //fallback if the core count can't be queried 
+if _, logical , ok := info.cpu_core_count(); ok {
+       thread_count = logical }
+
+graph : Task_Graph 
+init_task_graph(&graph , thread_count) //once at startup 
+defer destroy_task_graph(&graph)    //once at shutdown 
+
+write_dot_graph(8) // graph shape is fixed , so this only needs to run once too 
+items := [8]int{1,2,3,4,5,6,7,8}
+
+
+	// Stand-in for a game loop: the SAME graph (same pool, same worker threads, same Wait_Group) gets reused every "frame" - only the data changes. This is the part a naive one-shot translation would mind , and the part that actually matters for engine performance.
+	for frame in 0 ..< 3 {
+		fmt.printfln("=== frame %d ===", frame)
+		run_frame(&graph, items[:])
+	}
+}
