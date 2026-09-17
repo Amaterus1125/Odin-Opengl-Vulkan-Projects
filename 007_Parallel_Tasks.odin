@@ -42,7 +42,7 @@ sync.wait_group_done(job.wg)
 
 // THE STARTUP - constructing the graph once 
 init_task_graph :: proc(graph: ^Task_Graph, thread_count:int) { 
-      thread.pool_init(&graph.pool , allocator = context.allocator, thread_count - thread_count) 
+      thread.pool_init(&graph.pool , allocator = context.allocator, thread_count = thread_count) 
     // starting the pool here , not per frame , this is what makes this safe to reuse , the worker threads just sit ideal waiting on between frames , costing nothing but a few resident OS threads
      thread.pool_start(&graph.pool) 
 } 
@@ -56,7 +56,7 @@ delete(graph.jobs)
 }
 
 //per frame job runningby reusing the already running pool instead of rebuilding anything 
-run_frame :: proc(graph : 6Task_Graph , items: []int) {
+run_frame :: proc(graph : ^Task_Graph , items: []int) {
    //the start task , since nothing here depends on anything except "did s run yet" , running it synchronously right here already satisfies its one dependency rule , it happens before evry task is queded
   fmt.println("\nS- Start")
 //grow the scratch buffer only if this frame needs more slots than we have ever needed before 
@@ -87,23 +87,23 @@ for {
              break
            }
 }
-
+}
 // Writing a graphviz.dot file describing the fixed fixed S -> items -> T shape
 //The graph's SHAPE doesn't change frame to frame (only the item values do), so this only needs to run once, not every frame.
 
 write_dot_graph :: proc(item_count : int) { 
-  handle , err := os.open("taskflw.dot" , os.0_WRONLY | os.O_CREATE | os.O_TRUNC)
+  handle , err := os.open("taskflow.dot" , os.0_WRONLY | os.0_CREATE | os.0_TRUNC)
   if err != nil { 
        fmt.eprintln("could not write taskflow.dot:" , err)
        return 
 } 
 defer os.close(handle)
-fmt.println(handle, "digraph Taskflow {")
+fmt.fprintln(handle, "digraph Taskflow {")
 for i in 0 ..< item_count{
        fmt.fprintfln(handle, "\tS -> item_%d;", i)
 		fmt.fprintfln(handle, "\titem_%d -> T;", i)
 	}
-fmt.println(handle, "}")
+fmt.fprintln(handle, "}")
 }
 
 main :: proc() { 
