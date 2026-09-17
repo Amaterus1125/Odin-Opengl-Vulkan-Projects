@@ -92,7 +92,7 @@ for {
 //The graph's SHAPE doesn't change frame to frame (only the item values do), so this only needs to run once, not every frame.
 
 write_dot_graph :: proc(item_count : int) { 
-  handle , err := os.open("taskflow.dot" , os.0_WRONLY | os.0_CREATE | os.0_TRUNC)
+  handle , err := os.open("taskflow.dot" , os.O_WRONLY | os.O_CREATE | os.O_TRUNC)
   if err != nil { 
        fmt.eprintln("could not write taskflow.dot:" , err)
        return 
