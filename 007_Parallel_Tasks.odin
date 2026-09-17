@@ -35,7 +35,7 @@ print_item_task :: proc(task: thread.Task) {
    job := (^Item_Job)(task.data)
 
 // os.current_thread_id() -- which OS thread printed this , the actual source of the nondeterministic ordering in the output 
-fmt.printfln("%v runs %v" , os.current_thread_id() , job.value^)
+fmt.printfln("%v runs %v" , sync.current_thread_id() , job.value^)
 //tell run_frame() this one item is done ,once every item task has called this , the Wait_Group counter hits zero and run_frame() 's wait block below unblocks
 sync.wait_group_done(job.wg) 
 }
