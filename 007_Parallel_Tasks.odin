@@ -48,3 +48,60 @@ init_task_graph :: proc(graph: ^Task_Graph, thread_count:int) {
 } 
 
 //SHUTDOWN - tears down worker threads , call this exactly once , when the engine subsystem that owns this graph is actually shutting down 
+destroy_task_graph :: proc(graph: ^Task_Graph) {
+     //finishes any in flight taks , then joins and stps every worker thread , after this the pool cannot be restarted and that's fine since we only call this at real shutdown
+thread.pool_join(&graph.pool)
+thread.pool_destroy(&graph.pool)
+delete(graph.jobs)
+}
+
+//per frame job runningby reusing the already running pool instead of rebuilding anything 
+run_frame :: proc(graph : 6Task_Graph , items: []int) {
+   //the start task , since nothing here depends on anything except "did s run yet" , running it synchronously right here already satisfies its one dependency rule , it happens before evry task is queded
+  fmt.println("\nS- Start")
+//grow the scratch buffer only if this frame needs more slots than we have ever needed before 
+if len(graph.jobs) < len(items) {
+  resize(&graph.jobs , len(items))
+}
+
+//arm the counter with exactly how many item tasks we are about to hand out this frame 
+sync.wait_group_add(&graph.wg , len(items))
+
+// NOTE -  `&items[i]` and `&graph.wg` only need to stay valid until wait_group_wait() returns below - both do, since `items` is the caller's slice for this frame and `graph` outlives the call.
+for i in 0 ..<len(items) { 
+    graph.jobs[i] = Item_Job{value = &items[i] , wg = &graph.wg}
+    thread.pool_add_task(
+         &graph.pool,
+         allocator = context.allocator ,
+         procedure = print_item_task,
+         data = &graph.jobs[i] ,
+         user_index = i ,
+) }
+// Block until every item task for THIS frame has called
+sync.wait_group_wait(&graph.wg) 
+
+// The pool keeps finished tasks around until you pop them; drain them now so the pool's internal "done" list doesn't grow forever across thousands of frames.
+for { 
+      _, got_task := thread.pool_pop_done(&graph.pool)
+         if !got_task {
+             break
+           }
+}
+
+// Writing a graphviz.dot file describing the fixed fixed S -> items -> T shape
+//The graph's SHAPE doesn't change frame to frame (only the item values do), so this only needs to run once, not every frame.
+
+write_dot_graph :: proc(item_count : int) { 
+  handle , err := os.open("taskflw.dot" , os.0_WRONLY | os.O_CREATE | os.O_TRUNC)
+  if err != nil { 
+       fmt.eprintln("could not write taskflow.dot:" , err)
+       return 
+} 
+defer os.close(handle)
+fmt.println(handle, "digraph Taskflow {")
+for i in 0 ..< item_count{
+       fmt.fprintfln(handle, "\tS -> item_%d;", i)
+		fmt.fprintfln(handle, "\titem_%d -> T;", i)
+	}
+fmt.println(handle, "}")
+}
