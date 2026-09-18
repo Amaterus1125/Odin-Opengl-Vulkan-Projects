@@ -18,7 +18,7 @@ and precompiled for windows OS */
    Meshoptimizer on github has its header which is already c-compatible, the library internals are C++ but every public function 
    is warped in extern C , so we can foreign import striaght into the compiled library and declare the handful of functions we need ourselves without the bridge being required 
    
-   s size_t maps to Odin's uint (both are pointer-sized), and a T*/const T* maps to Odin's multi-pointer [^]T - a raw pointer with no built-in length, exactly what these C arrays are.
+   s size_t maps to Odin's uint (both are pointer-sized), and a T - const T* maps to Odin's multi-pointer [^]T - a raw pointer with no built-in length, exactly what these C arrays are.
    
 ONE-TIME BUILD STEP: compile meshoptimizer into a static lib (it ships its own CMakeLists.txt, target name `meshoptimizer`):
      git clone https://github.com/zeux/meshoptimizer
