@@ -121,9 +121,7 @@ for i in 0 ..< index_count {
 
 index_count := uint(len(positions))
 
-// Step 1 - find duplicates. `indices = nil` tells MeshOptimizer "this
-// vertex buffer is unindexed" (see the WHY above) - it treats every
-// position as its own separate corner and figures out which ones are actually identical. Returns how many UNIQUE vertices are left.
+// find duplicates indices = nil tells MeshOptimizer "this vertex buffer is unindexed" (see the WHY above) - it treats every position as its own separate corner and figures out which ones are actually identical. Returns how many UNIQUE vertices are left.
 remap := make([]u32, index_count)
 defer delete(remap)
 vertex_count := meshopt_generateVertexRemap(
@@ -131,7 +129,7 @@ vertex_count := meshopt_generateVertexRemap(
 	raw_data(positions), index_count, size_of([3]f32),
 )
 
-// Step 2 - build the deduplicated vertex buffer using that remap table.
+// build the deduplicated vertex buffer using that remap table.
 remapped_positions := make([][3]f32, vertex_count)
 defer delete(remapped_positions)
 meshopt_remapVertexBuffer(
@@ -139,20 +137,15 @@ meshopt_remapVertexBuffer(
 	raw_data(remap),
 )
 
-// Step 3 - build a real index buffer to go with it. `indices = nil` again
-// means "we don't have one yet, generate the implicit 0,1,2,3... sequence
-// (which matches the order `positions` is already in) and remap THAT."
+// Step 3 - build a real index buffer to go with it. `indices = nil` again means "we don't have one yet, generate the implicit 0,1,2,3... sequence (which matches the order `positions` is already in) and remap THAT."
 indices := make([]u32, index_count)
 defer delete(indices)
 meshopt_remapIndexBuffer(raw_data(indices), nil, index_count, raw_data(remap))
 
-// Step 4 - reorder triangles for the GPU's post-transform vertex cache.
-// Pure reordering, doesn't change what gets drawn.
+// reorder triangles for the GPU's post-transform vertex cache. Pure reordering, doesn't change what gets drawn.
 meshopt_optimizeVertexCache(raw_data(indices), raw_data(indices), index_count, vertex_count)
 
-// Step 5 - now that triangle order is settled, reorder the vertex buffer
-// itself to match how it's actually accessed (indices get rewritten to
-// match automatically).
+// now that triangle order is settled, reorder the vertex buffer itself to match how it's actually accessed (indices get rewritten to match automatically).
 meshopt_optimizeVertexFetch(
 	raw_data(remapped_positions), raw_data(indices), index_count,
 	raw_data(remapped_positions), vertex_count, size_of([3]f32),
@@ -185,7 +178,7 @@ vao: u32
 	gl.EnableVertexAttribArray(0)
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, size_of([3]f32), 0)
 
-	// vertex and fragment SHADERS - plain position-only, driven by an MVP matrix, same idea as our cube
+	// vertex and fragment SHADERS - plain position only, driven by an MVP matrix
 	vertex_src := `#version 460 core
 layout (location = 0) in vec3 a_pos;
 layout (std140, binding = 0) uniform PerFrameData { mat4 MVP; };
