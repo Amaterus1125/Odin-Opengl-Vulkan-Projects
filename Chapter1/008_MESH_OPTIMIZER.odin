@@ -26,24 +26,28 @@ ONE-TIME BUILD STEP: compile meshoptimizer into a static lib (it ships its own C
      cmake --build build --config Release
      build/Release/meshoptimizer.lib (point foreign import at that path)
 */ 
+  foreign import meshopt "meshoptimizer/build/Release/meshoptimizer.lib"
 
-foreign import meshopt "meshoptimizer/build/Release/meshoptimizer.lib"
 foreign meshopt {
-    /* finds the duplicate vertices and builds a table which states about which unique slot each vertex belongs to , passes indices as nil (indices=nil) 
+	/* finds the duplicate vertices and builds a table which states about which unique slot each vertex belongs to , passes indices as nil (indices=nil) 
     and buffer is unindexed (one entry per triangle corner, duplicates and all) - exactly what positions looks like furthur down the file 
     and returns the number of unique vertices left after dedup */ 
-   meshopt_remapVertexBuffer :: proc(destination : [^]u32 , indices:[^]u32 , index_count: uint , vertices:rawptr , vertex_count:uint , vertex_size:uint) -> uint ---
+	meshopt_generateVertexRemap :: proc(destination: [^]u32, indices: [^]u32, index_count: uint, vertices: rawptr, vertex_count: uint, vertex_size: uint) -> uint ---
 
-  //builds the actual deduplicated vertex buffer using a remap table from the function above 
-  meshopt_remapVertexBuffer :: proc(destination: rawptr, vertices: rawptr, vertex_count: uint, vertex_size: uint, remap: [^]u32) ---
+	  //builds the actual deduplicated vertex buffer using a remap table from the function above 
+	meshopt_remapVertexBuffer :: proc(destination: rawptr, vertices: rawptr, vertex_count: uint, vertex_size: uint, remap: [^]u32) ---
 
-  //builds a fresh index buffer through the same remap table , pass indices = nil , here too when you don't have real indices yet - it generates the implicit 0,1,2,3 sequences and remap 
-  meshopt_optimizeVertexCache :: proc(destination: [^]u32, indices: [^]u32, index_count: uint, vertex_count: uint) ---
+	 //builds a fresh index buffer through the same remap table , pass indices = nil , here too when you don't have real indices yet - it generates the implicit 0,1,2,3 sequences and remap 
+	meshopt_remapIndexBuffer :: proc(destination: [^]u32, indices: [^]u32, index_count: uint, remap: [^]u32) ---
 
- //Reorders the VERTEX BUFFER itself to match the access order set by the triangle order above (and rewrites indices to match) , good for cache locality when the vertex shader reads it 
-  meshopt_optimizerVertexFetch :: proc(destination: rawptr, indices: [^]u32, index_count: uint, vertices: rawptr, vertex_count: uint, vertex_size: uint) -> uint ---
+	// Reorders TRIANGLES (not vertices) so nearby triangles in the index buffer tend to reuse vertices the GPU's small post-transform vertex cache still has warm. Doesn't change what gets drawn, only the order indices are stored in.
+	meshopt_optimizeVertexCache :: proc(destination: [^]u32, indices: [^]u32, index_count: uint, vertex_count: uint) ---
+
+	// Reorders the VERTEX buffer itself to match the access order set by
+	// the triangle order above (and rewrites indices to match) - good for
+	// cache locality when the vertex shader reads it.
+	meshopt_optimizeVertexFetch :: proc(destination: rawptr, indices: [^]u32, index_count: uint, vertices: rawptr, vertex_count: uint, vertex_size: uint) -> uint ---
 }
-
 
 PerFrameData :: struct {
   mvp: matrix[4,4]f32,
@@ -108,30 +112,18 @@ for i in 0 ..< index_count {
 }
 }
 
-// ============================================================================
-// MESHOPTIMIZER - dedupe + optimize before this ever touches the GPU
-// ============================================================================
-// WHERE this goes: right here, after `positions` is built and BEFORE the
-// "UPLOAD THE POSITIONS TO THE GPU" section below - MeshOptimizer is a pure
-// CPU-side pass over plain arrays, it doesn't know or care that the data
-// came from cgltf, it just wants a vertex buffer (and optionally an index
-// buffer) to rearrange.
-//
-// WHY it's needed here specifically: the loop above just finished walking
-// prim.indices and pushing a FRESH COPY of each vertex's xyz every time -
-// so if two triangles share an edge, that shared vertex now exists TWICE in
-// `positions` (once per triangle corner that touches it). That's wasted
-// GPU memory and wasted vertex-shader work for no reason. MeshOptimizer's
-// generateVertexRemap step below finds those duplicates and gives you both
-// a deduplicated vertex buffer AND a real index buffer back - which also
-// means switching the draw call from gl.DrawArrays to gl.DrawElements.
+/* MESHOPTIMIZER - dedupe + optimize before this ever touches the GPU, WHERE this goes: right here, after `positions` is built and BEFORE the
+ "UPLOAD THE POSITIONS TO THE GPU" section below - MeshOptimizer is a pure CPU-side pass over plain arrays, it doesn't know or care that the data came from cgltf, it just wants a vertex buffer (and optionally an index
+ buffer) to rearrange. WHY it's needed here specifically: the loop above just finished walking prim.indices and pushing a FRESH COPY of each vertex's xyz every time -
+ so if two triangles share an edge, that shared vertex now exists TWICE in positions (once per triangle corner that touches it). That's wasted
+ GPU memory and wasted vertex-shader work for no reason. MeshOptimizer's generateVertexRemap step below finds those duplicates and gives you both a deduplicated vertex buffer AND a real index buffer back, which also
+ means switching the draw call from gl.DrawArrays to gl.DrawElements. */
 
 index_count := uint(len(positions))
 
 // Step 1 - find duplicates. `indices = nil` tells MeshOptimizer "this
 // vertex buffer is unindexed" (see the WHY above) - it treats every
-// position as its own separate corner and figures out which ones are
-// actually identical. Returns how many UNIQUE vertices are left.
+// position as its own separate corner and figures out which ones are actually identical. Returns how many UNIQUE vertices are left.
 remap := make([]u32, index_count)
 defer delete(remap)
 vertex_count := meshopt_generateVertexRemap(
