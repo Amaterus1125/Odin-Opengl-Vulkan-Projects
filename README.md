@@ -49,8 +49,8 @@ No rush, no shortcuts — just steady reps and shipping small working things.
 
 | Stage | Focus | Status |
 |---|---|---|
-| 001 — CHAPTER1| BASIC OPENGL AND ODIN IMPLEMENTATIONS | 🟢 done |
-| 002 — Moving Cube | 3D cube, MVP matrices, depth test, wireframe overlay | 🟢 done |
+| 001 — CHAPTER-1| BASIC OPENGL AND ODIN IMPLEMENTATIONS | 🟢 done |
+| 002 — CHAPTER-2 | OPENGL AND VULKAN WITH SOME START OF TEXTURE MAPPING  | ⚪ Continuing |
 | 003 — Lighting | normals, basic Phong/Blinn shading | ⚪ planned |
 | 004 — Textures & Models | texture loading, loading real meshes | ⚪ planned |
 | 005 — Camera & Input | free-look camera, keyboard/mouse control | ⚪ planned |
