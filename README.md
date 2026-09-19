@@ -49,7 +49,7 @@ No rush, no shortcuts — just steady reps and shipping small working things.
 
 | Stage | Focus | Status |
 |---|---|---|
-| 001 — Triangle | window + first triangle, shaders, VAO/VBO | 🟢 done |
+| 001 — CHAPTER1| BASIC OPENGL AND ODIN IMPLEMENTATIONS | 🟢 done |
 | 002 — Moving Cube | 3D cube, MVP matrices, depth test, wireframe overlay | 🟢 done |
 | 003 — Lighting | normals, basic Phong/Blinn shading | ⚪ planned |
 | 004 — Textures & Models | texture loading, loading real meshes | ⚪ planned |
