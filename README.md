@@ -114,3 +114,5 @@ Build small things. Break them. Fix them. That's basically the whole method.
 
 ⭐ if you're also learning Odin, OpenGL, or Vulkan, feel free to fork this and build
 alongside it.
+
+## Creative Commons Legal Code 
