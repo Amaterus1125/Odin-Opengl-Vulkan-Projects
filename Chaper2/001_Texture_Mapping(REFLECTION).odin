@@ -225,7 +225,28 @@ void main() {
 	vtx.worldPos = (model * vec4(pos, 1.0)).xyz;
 }`
 
+//writing the reflection/refraction math actually happening
+duck_fragment_src := #version 460 core 
+layout(std140, binding = 0) uniform PerFrameData {
+	mat4 model;
+	mat4 MVP;
+	vec4 cameraPos;
+};
+struct PerVertex { vec2 uv; vec3 normal; vec3 worldPos;};
+layout(location=0) in PerVertex vtx;
+layout(location=0) out vec4 out_FragColor;
+layout(binding=0) uniform sampler2D texture0;    //the duck regular color texture 
+layout(binding=0) uniform samplerCube texture1; //our cubemap sky , used for the shiny effect 
 
+void main() { 
+vec3 n = normalize(vtx.normal); //surface direction at this pixel 
+vec3 v = normalize(cameraPos.xyz - vtx.worldPos); //our cubemap sky , used for shiny effect 
+// mirror-bounce direction (reflection) and bent-through direction (refraction)
+	vec3 reflection = -normalize(reflect(v, n));
+    float eta = 1.00 / 1.31;                         // ratio of how much light bends roughly water/rubber-ish
+	vec3 refraction = -normalize(refract(v, n, eta));
+    
+// SCHLICK'S APPROXIMATION (the Fresnel effect) 
 
  
 
