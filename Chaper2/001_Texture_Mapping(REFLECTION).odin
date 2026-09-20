@@ -226,7 +226,7 @@ void main() {
 }`
 
 //writing the reflection/refraction math actually happening
-duck_fragment_src := #version 460 core 
+duck_fragment_src := `#version 460 core 
 layout(std140, binding = 0) uniform PerFrameData {
 	mat4 model;
 	mat4 MVP;
