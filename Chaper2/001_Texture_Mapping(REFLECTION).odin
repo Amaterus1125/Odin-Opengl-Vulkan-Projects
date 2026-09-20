@@ -246,7 +246,7 @@ vec3 v = normalize(cameraPos.xyz - vtx.worldPos); //our cubemap sky , used for s
     float eta = 1.00 / 1.31;                         // ratio of how much light bends roughly water/rubber-ish
 	vec3 refraction = -normalize(refract(v, n, eta));
     
-// SCHLICK'S APPROXIMATION (the Fresnel effect) 
+// SCHLICK'S APPROXIMATION (the Fresnel effect) - meaning the rate of reflection or refraction depends on which angle u looking from , happens in real life 
 // R0 = how reflective the surface is when looking STRAIGHT AT it (angle = 0)
  const float R0 = ((1.0 - eta) * (1.0 - eta)) / ((1.0 + eta) * (1.0 + eta));
 
