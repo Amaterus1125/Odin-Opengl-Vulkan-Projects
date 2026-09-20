@@ -79,6 +79,124 @@ case 5: return {1.0 - b, a - 1.0, -1.0}
 return {} 
 } 
 
+/* takes a flat quirectangular photo and re arranges it into a vertical cross layout , like those unfolded dice brain excersizes , cubr faces are arranged in a cross/plus shape 
+, its a convinient layout before we split it into 6 seperate face images in the enxt step */
+
+convert_eqirect_to_vertical_cross :: proc(n:^Bitmap) -> Bitmap { 
+ face_size := b.w /4 
+ w := face_size *3 
+ h := face_size *4 
+ result := make_bitmap(w,h,1,3) 
+
+//where each of the faces sits within the cross shaped layout 
+face_offsets := [6][2]int {
+ {face_size , face_size *3} ,
+ {0 , face_size} , 
+ { face_size , face_size} ,
+{face_size *2 , face_size} ,
+{ face_size , face_size *2} ,
+}
+
+clamp_w := b.w -1
+clamp_h := b.h -1 
+
+for face in 0 ..< 6 { 
+   for i in 0 ..< face size { 
+      for j in 0 ..< face_size { 
+      p := face_coords_to_xyz( i , j , face, face_size) 
+// convert this 3d direction ( thetha , phi) to langitude and latitude 
+ r := amth.sqrt( p.x *p.x + p.y * p.y) 
+ thetha := math.atan2(p.y , p.x) 
+ phi := math.atan2(p.z,r)
+
+//turning those angles into an actual u,v pixel position inside the original flat equirectangular photo 
+ uf := 2.0 * f32(face_size) * (theta + math.PI) .math.PI 
+ vf := 2.0 * f32(face_size) * (math.PI / 2.0 - phi) / math.PI
+
+/* BILINEAR INTERPOLATION - uf/vf usually land between 4 real pixels , not exactly one , so we grab all 4 pixels (u1,v1) to (u2,v2) and blend them based on how close we are to each other 
+, s and t are how far ( 0.0 to 1.0) we are between them on each axis */
+
+u1 := clamp( int(math.floor(uf)) , 0 , clamp_w) 
+v1 := clamp(int(math.floor(vf)) , 0 , clamp_h) 
+u2 := clamp(u1 +1 , 0 , clamp_w) 
+v2 := clamp(v1 + 1 , 0 , clamp_h) 
+s := uf - f32(u1) 
+t := vf - f32(v1) 
+
+ca := get_pixel(b , u1, v1) 
+cb := get_pixel(b, u2, v1)
+cc := get_pixel(b, u1, v2)
+cd := get_pixel(b, u2, v2)
+
+// writing the actual weighted blend , closer corners count more 
+ color : [4]f32 
+ for k in 0 ..<4 { 
+ color[k] = 
+ ca[k] * (1 - s) * (1 - t) +
+cb[k] * s * (1 - t) +
+cc[k] * (1 - s) * t +
+cd[k] * s * t
+}
+set_pixel(&result , i + face_offsets[face].x , j + face_offsets[face].y , color ) 
+} 
+}
+} 
+return result 
+} 
+
+// the full pipeline - load an HDR photo from disk , convert to vertical cross , split into 6 faces and upload as an opengl cubemap texture 
+
+load_cubemap :: proc(hdr_path : string) -> u32{ 
+ w , h, comp: i32 
+path_c := fmt.ctprintf("%s", hdr_path)
+raw := stb1.loadf(path_c , &w , &h , &comp , 3) 
+if raw == nil { 
+  fmt.println("failed to load the hdr file: " , hdr_path) 
+ return 0 
+} 
+defer stbi.image_free(raw) 
+// copying the loaded pixels into on our own bitmap so we can work with them 
+in_bitmap := make_bitmap( int(w) , int(h) , 1,3) 
+pixel := int(w) * int(h) *3
+raw_slice := raw[:pixel_count] 
+copy(in_bitmap.pixels , raw_slice) 
+
+cross := convert_equirect_to_vertical_cross(&in_bitmap)
+	defer delete(cross.pixels)
+
+//optional if you want to peek at the cross-layout image for debugging or seeing it 
+os.make_directory("data/out")
+	stbi.write_hdr("data/out/screen.hdr", i32(cross.w), i32(cross.h), i32(cross.comp), raw_data(cross.pixels))
+
+	cm := convert_vertical_cross_to_cube_faces(&cross)
+	defer delete(cm.pixels)
+
+	tex: u32
+	gl.CreateTextures(gl.TEXTURE_CUBE_MAP, 1, &tex)
+	gl.TextureParameteri(tex, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TextureParameteri(tex, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	gl.TextureParameteri(tex, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE)
+	gl.TextureParameteri(tex, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+	gl.TextureParameteri(tex, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+	gl.TextureStorage2D(tex, 1, gl.RGB32F, i32(cm.w), i32(cm.h))
+
+	face_pixel_count := cm.w * cm.h * cm.comp
+	for i in 0 ..< 6 {
+		face_data := cm.pixels[i * face_pixel_count:(i + 1) * face_pixel_count]
+		gl.TextureSubImage3D(tex, 0, 0, 0, i32(i), i32(cm.w), i32(cm.h), 1, gl.RGB, gl.FLOAT, raw_data(face_data))
+	}
+
+	return tex
+}
+
+
+// PART -2 SHADERS 
+
+PerFrameData :: sturct { 
+  model :  matrix[4, 4]f32,
+  mvp : matrix[4 , 4] f32,
+  camera_pos : [4]f32 ,
+} 
 
 
 
@@ -86,7 +204,7 @@ return {}
 
 
 
-
+ 
 
 
 
