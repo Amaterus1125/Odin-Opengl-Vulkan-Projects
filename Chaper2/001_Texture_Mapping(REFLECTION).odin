@@ -253,10 +253,13 @@ vec3 v = normalize(cameraPos.xyz - vtx.worldPos); //our cubemap sky , used for s
 const float Rtheta = R0 + (1.0 - R0) * pow((1.0 - dot(-v, n)), 5.0);
 
 vec4 color = texture(texture0, vtx.uv);
-	vec4 colorRefl = texture(texture1, reflection);
-	vec4 colorRefr = texture(texture1, refraction);
+vec4 colorRefl = texture(texture1, reflection);
+vec4 colorRefr = texture(texture1, refraction);
 
-
+// blend the reflection and refraction based on that angle dependent factor and then multiply by the duck;s own base color or texture 
+color = color * mix(colorRefl, colorRefr, Rtheta);
+out_FragColor = color;
+}`
 
 
 
