@@ -33,3 +33,72 @@ and it's just a weighted average using how far we are from each neighbor. */
 blend towards reflection vs refraction depends on viewing angle , this is a real physical effect known as FRENSEL EFFECT, We approximate the real physics using "Schlick's approximation", a well-known formula that's cheap
 to compute and looks convincingly close to correct. */
 
+
+//PART 1 - BITMAP HELPERS 
+/* a simple in memory image , width ,height and depth and how many color channels per pixel (3 = RGB) , we only deal with floating point color channels here as HDR images store much brightness and darker range than a normal 0-255 range image  */
+
+Bitmap :: struct { 
+   w,h,d , comp: int ,
+   pixels : []f32, 
+}
+
+make_bitmap :: proc(w,h,d,comp:int) -> Bitmap{
+   return Bitmap(w,h,d,comp,make([]f32 , w*h*d*comp)}
+}
+
+get_pixel :: proc(b: ^Bitmap,x,y:int)  -> [4]f32 { 
+    ofs := b.comp * (y*b.w +x)
+    c: [4]f32 
+    for k in 0 ..<min(b.comp ,4) {
+   c[k] = b.pixels[ofs + k ]
+}
+return c 
+}
+
+set_pixel :: proc(b:^Bitmap , x,y:int , c :[4]f32) { 
+   ofs := b.comp * (y*b.w+ x) 
+   for k in 0 ..<b.comp {  
+      b.pixels[ofs+k] = c[k] 
+}
+}
+
+/* now given the pixel position (i,j) on one face of a cube (faceID - 0 to 5 , each face facesize x facesize) , returns a 3d direction that pixel points toward if the cube is 
+centered around the origin, each 'if' below is just one face of the cube( a fixed X,Y,Z) with the other 2 coordinates sliding from -1 to 1 across that face */
+
+face-coords_to_xyz :: proc(i,j , face_id , face_size : int) -> [3]f32 { 
+ a := 2.0 *f32(i) /f32(face_size) 
+ b := 2.0 *f32(j) /f32(face_size)
+switch face_id { 
+case 0: return {-1.0, a - 1.0, b - 1.0}
+case 1: return {a - 1.0, -1.0, 1.0 - b}
+case 2: return {1.0, a - 1.0, 1.0 - b}
+case 3: return {1.0 - a, 1.0, 1.0 - b}
+case 4: return {b - 1.0, a - 1.0, 1.0}
+case 5: return {1.0 - b, a - 1.0, -1.0}
+}
+return {} 
+} 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
