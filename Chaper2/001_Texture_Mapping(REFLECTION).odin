@@ -249,7 +249,7 @@ vec3 v = normalize(cameraPos.xyz - vtx.worldPos); //our cubemap sky , used for s
 // SCHLICK'S APPROXIMATION (the Fresnel effect) - meaning the rate of reflection or refraction depends on which angle u looking from , happens in real life 
 // R0 = how reflective the surface is when looking STRAIGHT AT it (angle = 0)
  const float R0 = ((1.0 - eta) * (1.0 - eta)) / ((1.0 + eta) * (1.0 + eta));
-// as the viewing angle becomes more grazing/sideways, reflectivity rises
+// as the viewing angle becomes more grazing/sideways, reflectivity rises toward 1.0 and that's what this pow(...) term is doing
 
 
 
