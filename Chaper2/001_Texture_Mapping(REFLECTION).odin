@@ -27,3 +27,9 @@ positions in the flat photo. We grab the color from there and copy it onto the c
 
 /* Since the calculated position often lands BETWEEN 4 actual pixels (not exactly on one), we blend those 4 neighboring pixels together based on how close we are to each and this is called BILINEAR INTERPOLATION, 
 and it's just a weighted average using how far we are from each neighbor. */
+
+// PART 2 - MAKEING THE FIGURE LOOK REFLECTIVE AND REFRACTIVE 
+/* in the fragment shader , for each pixel of the duck we calculate 2 rays, The reflection ray and The refractive ray ,by sampling the cubemap sky in both of those directions , then blend them together, how much we 
+blend towards reflection vs refraction depends on viewing angle , this is a real physical effect known as FRENSEL EFFECT, We approximate the real physics using "Schlick's approximation", a well-known formula that's cheap
+to compute and looks convincingly close to correct. */
+
