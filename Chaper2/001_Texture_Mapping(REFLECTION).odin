@@ -250,7 +250,7 @@ vec3 v = normalize(cameraPos.xyz - vtx.worldPos); //our cubemap sky , used for s
 // R0 = how reflective the surface is when looking STRAIGHT AT it (angle = 0)
  const float R0 = ((1.0 - eta) * (1.0 - eta)) / ((1.0 + eta) * (1.0 + eta));
 // as the viewing angle becomes more grazing/sideways, reflectivity rises toward 1.0 and that's what this pow(...) term is doing
-
+const float Rtheta = R0 + (1.0 - R0) * pow((1.0 - dot(-v, n)), 5.0);
 
 
 
