@@ -248,7 +248,7 @@ vec3 v = normalize(cameraPos.xyz - vtx.worldPos); //our cubemap sky , used for s
     
 // SCHLICK'S APPROXIMATION (the Fresnel effect) 
 // R0 = how reflective the surface is when looking STRAIGHT AT it (angle = 0)
- 
+ const float R0 = ((1.0 - eta) * (1.0 - eta)) / ((1.0 + eta) * (1.0 + eta));
 
 
 
