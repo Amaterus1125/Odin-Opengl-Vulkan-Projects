@@ -198,7 +198,8 @@ PerFrameData :: sturct {
   camera_pos : [4]f32 ,
 } 
 
-
+/* draws the duck , this vertex shader just positions each vertex normally , and reads position/uv/normal out of a raw buffer of floats rather than the usual vertex 
+attributes , same idea as microui font atlas , its a chunk og gpu memory we are interpretating ourselves by hand instead of letting opengl automatically decode it for us */
 
 
 
