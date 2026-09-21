@@ -264,7 +264,7 @@ out_FragColor = color;
 /*now writing the skybox itself , same as hardcore a cube corners directly in the shader trick from our earlier gradient cube example , just scaled way up (100x) so it 
 surrounds the whole scene instead of a flat color it looks uo to the cubemap texture using its own position as direction  */
 
-cube_vertex_src := '#version 460 core 
+cube_vertex_src := `#version 460 core 
 layout(std140, binding = 0) uniform PerFrameData {
 	mat4 model;
 	mat4 MVP;
