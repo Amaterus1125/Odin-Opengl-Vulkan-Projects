@@ -312,7 +312,11 @@ p := gl.CreateProgram()
 	gl.AttachShader(p, compile(gl.VERTEX_SHADER, vs_src))
 	gl.AttachShader(p, compile(gl.FRAGMENT_SHADER, fs_src))
 	gl.LinkProgram(p)
-
+    ok: i32
+	gl.GetProgramiv(p, gl.LINK_STATUS, &ok)
+	if ok == 0 {
+    log :[4096]u8 
+    
 
 
 
