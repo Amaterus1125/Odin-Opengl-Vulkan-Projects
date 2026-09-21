@@ -299,6 +299,19 @@ make_program :: proc(vs_src , fs_src:string) -> u32 {
  ok : i32 
  if ok ==0 { 
  log : [4096]u8 
+ gl.GetShaderInfoLog(s, 4096, nil, raw_data(log[:]))
+fmt.println("shader error:", string(log[:]))
+}
+return s
+}
+// the final part 
+
+p := gl.CreateProgram()
+	gl.AttachShader(p, compile(gl.VERTEX_SHADER, vs_src))
+	gl.AttachShader(p, compile(gl.FRAGMENT_SHADER, fs_src))
+	gl.LinkProgram(p)
+
+
 
 
 
