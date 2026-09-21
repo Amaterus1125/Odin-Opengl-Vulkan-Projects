@@ -316,7 +316,15 @@ p := gl.CreateProgram()
 	gl.GetProgramiv(p, gl.LINK_STATUS, &ok)
 	if ok == 0 {
     log :[4096]u8 
-    
+    gl.GetProgramInfoLog(p, 4096, nil, raw_data(log[:]))
+		fmt.println("link error:", string(log[:]))
+	}
+	return p
+}
+
+
+// THE ENTIRE MAIN PART FOR THE CODE EXECUTION AND ALL THE WINDOW STUFF 
+
 
 
 
