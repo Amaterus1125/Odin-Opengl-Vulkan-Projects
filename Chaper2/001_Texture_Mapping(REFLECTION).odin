@@ -277,7 +277,11 @@ vec3(-1,-1,-1), vec3( 1,-1,-1), vec3( 1, 1,-1), vec3(-1, 1,-1));
 const int indices[36] = int[36](                                         //36 points to make the cubemap skybox itself with hardcore cube corners 
 0,1,2, 2,3,0,  1,5,6, 6,2,1,  7,6,5, 5,4,7,
 4,0,3, 3,7,4,  4,5,1, 1,0,4,  3,2,6, 6,7,3);
-
+void main() {
+	int idx = indices[gl_VertexID];
+	gl_Position = MVP * vec4(100.0 * pos[idx], 1.0);
+	dir = pos[idx];
+}`
 
 
 
