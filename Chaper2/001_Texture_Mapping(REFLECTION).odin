@@ -270,7 +270,8 @@ layout(std140, binding = 0) uniform PerFrameData {
 	mat4 MVP;
 	vec4 cameraPos;
 };
-  
+layout(location = 0) out vec3 dir;
+const vec3 pos[8] = vec3[8](
 
 
 
