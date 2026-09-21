@@ -283,6 +283,14 @@ void main() {
 	dir = pos[idx];
 }`
 
+//writing the cube fragment now , with location =0 , and binding =1 and giving it the texture we want it to have 
+cube_fragment_src := `#version 460 core
+layout(location = 0) in vec3 dir;
+layout(location = 0) out vec4 out_FragColor;
+layout(binding = 1) uniform samplerCube texture1;
+void main() { out_FragColor = texture(texture1, dir); }`
+
+
 
 
 
