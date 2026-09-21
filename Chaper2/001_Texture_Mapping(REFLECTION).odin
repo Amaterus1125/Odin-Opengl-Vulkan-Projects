@@ -293,7 +293,12 @@ void main() { out_FragColor = texture(texture1, dir); }`
 make_program :: proc(vs_src , fs_src:string) -> u32 { 
   compile :: proc*shader_type :u32 , src:string) -> u32 { 
   s := gl.CreateShader(shader_type)
-
+  c_src := cstring(raw_data(src)) 
+  gl.ShaderSource(s,1,&c_src , nil)
+ gl.CompileShader(s) 
+ ok : i32 
+ if ok ==0 { 
+ log : [4096]u8 
 
 
 
