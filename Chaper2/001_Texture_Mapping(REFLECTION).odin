@@ -306,8 +306,7 @@ fmt.println("shader error:", string(log[:]))
 }
 return s
 }
-// the final part 
-
+// the final part - about linking the program and attaching both vertex and fragment shaders
 p := gl.CreateProgram()
 	gl.AttachShader(p, compile(gl.VERTEX_SHADER, vs_src))
 	gl.AttachShader(p, compile(gl.FRAGMENT_SHADER, fs_src))
@@ -323,7 +322,7 @@ p := gl.CreateProgram()
 }
 
 
-// THE ENTIRE MAIN PART FOR THE CODE EXECUTION AND ALL THE WINDOW STUFF 
+// THE ENTIRE MAIN PART FOR THE CODE EXECUTION AND ALL THE WINDOW STUFF and creating VBO , VA0 , EBO 
 
 
 
