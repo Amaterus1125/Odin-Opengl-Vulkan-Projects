@@ -272,7 +272,8 @@ layout(std140, binding = 0) uniform PerFrameData {
 };
 layout(location = 0) out vec3 dir;
 const vec3 pos[8] = vec3[8](
-
+vec3(-1,-1, 1), vec3( 1,-1, 1), vec3( 1, 1, 1), vec3(-1, 1, 1),
+vec3(-1,-1,-1), vec3( 1,-1,-1), vec3( 1, 1,-1), vec3(-1, 1,-1));
 
 
 
