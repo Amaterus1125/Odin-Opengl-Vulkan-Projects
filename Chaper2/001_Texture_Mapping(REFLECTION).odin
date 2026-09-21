@@ -290,6 +290,9 @@ layout(location = 0) out vec4 out_FragColor;
 layout(binding = 1) uniform samplerCube texture1;
 void main() { out_FragColor = texture(texture1, dir); }`
 
+make_program :: proc(vs_src , fs_src:string) -> u32 { 
+  compile :: proc*shader_type :u32 , src:string) -> u32 { 
+  s := gl.CreateShader(shader_type)
 
 
 
