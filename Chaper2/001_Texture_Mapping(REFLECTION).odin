@@ -324,6 +324,34 @@ p := gl.CreateProgram()
 
 // THE ENTIRE MAIN PART FOR THE CODE EXECUTION AND ALL THE WINDOW STUFF and creating VBO , VA0 , EBO 
 
+main ::proc() { 
+ glfw.Init() 
+ defer glfw.Terminate() 
+ glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 4)
+	glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 6)
+	glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
+    window := glfw.CreateWindow(1280, 720, "reflecting duck", nil, nil)
+	glfw.MakeContextCurrent(window)
+	gl.load_up_to(4, 6, glfw.gl_set_proc_address)
+	glfw.SwapInterval(1)
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
