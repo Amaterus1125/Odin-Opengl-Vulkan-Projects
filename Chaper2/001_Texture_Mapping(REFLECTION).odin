@@ -14,12 +14,8 @@ import "base:runtime"
 
 //EDIT THESE 3 PATHS TO POINT AT YOUR OWN FILES BEFORE RUNNING - 
 HDR_PATH   :: "street.hdr"   //an equirectangle 360 degree hdr photo , common enviornmental maps we can find online easily
-DUCK_GLTF_PATH :: "rubber__duck/scene.gltf"  // duck model or avocado model from earlier projects ( i will upload the duck model) 
+DUCK_GLTF_PATH :: "rubber_duck/scene.gltf"  // duck model or avocado model from earlier projects ( i will upload the duck model) 
 DUCK_TEXTURE_PATH  :: "rubber_duck/DuckCM.png"  // the duck color texture 
-
-
-
-
 
 
 // free moving camera to move around , use WASD to move and mouse to look 
