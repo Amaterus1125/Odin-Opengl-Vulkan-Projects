@@ -486,7 +486,24 @@ width, height := glfw.GetFramebufferSize(window)
 gl.Viewport(0, 0, width, height)
 gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
+//timeing so the camera movement does not effect the framerate much 
+current_time := f32(glfw.GetTime())
+delta_time := current_time - last_frame_time
+last_frame_time = current_time
 
+//the wasd camera movement - which in fact does not work for some reason , so problem solve it yourself , i have been writing this code for past 5 days and i am in no mood 
+move_speed := 2.5 * delta_time // units per frame; raise 2.5 for a faster camera
+camera_right := linalg.normalize(linalg.cross(camera_front, camera_up))
+if glfw.GetKey(window, glfw.KEY_W) == glfw.PRESS { camera_pos += camera_front * move_speed }
+if glfw.GetKey(window, glfw.KEY_S) == glfw.PRESS { camera_pos -= camera_front * move_speed }
+if glfw.GetKey(window, glfw.KEY_A) == glfw.PRESS { camera_pos -= camera_right * move_speed }
+if glfw.GetKey(window, glfw.KEY_D) == glfw.PRESS { camera_pos += camera_right * move_speed }
+
+//now making a cool thing  building the camera view matrix , looks_at builds a matrix that repositions / rerotates the whole world as if the camera were standing at camera_pos looking towards camer_pos + camera_front 
+view := linalg.matrix4_look_at_f32(camera_pos, camera_pos + camera_front, camera_up)
+
+//the skybox needs a version of this movement removed(just rotaton) , otherwise walking forward will make u catch up to the sky instead of staying infinetly far away 
+sky_view := linalg.matrix4_look_at_f32([3]f32{0, 0, 0}, camera_front, camera_up)
 
 
 
