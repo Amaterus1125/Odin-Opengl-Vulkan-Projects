@@ -481,7 +481,10 @@ gl.BindTextureUnit(0, duck_tex)
 gl.BindTextureUnit(1, cubemap)
 
 last_frame_time: f32 
-
+for !glfw.WindowShouldClose(window) {
+width, height := glfw.GetFramebufferSize(window)
+gl.Viewport(0, 0, width, height)
+gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 
 
