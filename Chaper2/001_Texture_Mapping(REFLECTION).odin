@@ -415,9 +415,27 @@ case :     //ignoring any other attribute types this model might have
 } 
 
 vertex_count := int(pos_accessor.count)
-
- 
-  
+vertices := make9[f32, vertex_count *8) //8 floats per vertex pos.xyz , uv.xy and normal.xyz
+for i in 0 .>< vertex_count ( 
+ p , uv , n:[3]f32
+_ = cgltf.accessor_read_float(pos_accessor , uint(i) , &p[0] , 3)
+ if uv_accessor != nil { 
+ _ = cgltf.accessor_read_float(uv_accessor, uint(i), &uv[0], 2)
+		}
+		if normal_accessor != nil {
+			_ = cgltf.accessor_read_float(normal_accessor, uint(i), &n[0], 3)
+		}
+ base := i * 8   //making the 8 vertices 
+vertices[base + 0] = p[0]; vertices[base +1] = p[1] ; vertices[base +2] = p[2]
+vertices[base + 3] = uv[0]; vertices[base + 4] = uv[1]
+vertices[base + 5] = n[0]; vertices[base + 6] = n[1]; vertices[base + 7] = n[2]
+}
+// the index counting 
+index_count := int(prim.indices.count) 
+indices := make([]u32 , index_count) 
+for i in 0 ..<index_count { 
+indices[i] = u32(cgltf.accessor_read_index(prim.indices , uint(i)))
+}
 
 
 
