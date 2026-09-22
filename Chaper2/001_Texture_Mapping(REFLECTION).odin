@@ -396,7 +396,26 @@ if cubemap == 0 {
 }
 gl.Enable(gl.TEXTURE_CUBE_MAP_SEAMLESS) //hides the visible seams between cube faces 
 //LOADING THE DUCK MODEL 
-options 
+options := cgltf.options
+data , parse_result := cgltf.parse_file(options , DUCK_GLTF_PATH)
+if parse_result != .success {
+ fmt.println("FAILED TO PARSE DUCK BUFFERS, SED: " , load_result)
+ return
+}
+
+mesh := data.meshes[0]
+prim := mesh.primitives[0]
+pos_sccessor , uv_accessor , normal_accessor: ^cgltf.accessor
+for attr in prim.attributes { 
+#partial switch attr.data 
+case .positions: pos_accessor = attr.data
+case .normal : normal_accessor = attr.data
+case .texcoord: uv_accessor = attr.data
+case :     //ignoring any other attribute types this model might have 
+} 
+
+vertex_count := int(pos_accessor.count)
+
  
   
 
