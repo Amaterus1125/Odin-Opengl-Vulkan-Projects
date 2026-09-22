@@ -436,7 +436,38 @@ indices := make([]u32 , index_count)
 for i in 0 ..<index_count { 
 indices[i] = u32(cgltf.accessor_read_index(prim.indices , uint(i)))
 }
+vbo, ibo, vao: u32
+	gl.CreateBuffers(1, &vbo)
+	gl.NamedBufferStorage(vbo, len(vertices) * size_of(f32), raw_data(vertices), 0)
+	gl.CreateBuffers(1, &ibo)
+	gl.NamedBufferStorage(ibo, len(indices) * size_of(u32), raw_data(indices), 0)
+	gl.CreateVertexArrays(1, &vao)
+	gl.VertexArrayElementBuffer(vao, ibo)
+	// FIX: Use standard vertex attributes to prevent driver-side index buffer failures
+	stride := i32(8 * size_of(f32))
+	gl.VertexArrayVertexBuffer(vao, 0, vbo, 0, stride)
 
+	gl.EnableVertexArrayAttrib(vao, 0) // Position
+	gl.VertexArrayAttribFormat(vao, 0, 3, gl.FLOAT, false, 0)
+	gl.VertexArrayAttribBinding(vao, 0, 0)
+
+	gl.EnableVertexArrayAttrib(vao, 1) // UV
+	gl.VertexArrayAttribFormat(vao, 1, 2, gl.FLOAT, false, 3 * size_of(f32))
+	gl.VertexArrayAttribBinding(vao, 1, 0)
+
+	gl.EnableVertexArrayAttrib(vao, 2) // Normal
+	gl.VertexArrayAttribFormat(vao, 2, 3, gl.FLOAT, false, 5 * size_of(f32))
+	gl.VertexArrayAttribBinding(vao, 2, 0)
+
+	//  basic loading of the duck texture - but important function call here, we have done similar things before 
+	stbi.set_flip_vertically_on_load(1) // 1 = true, this proc wants a plain C-style int, not an Odin bool
+	tw, th, tc: i32
+	px := stbi.load(DUCK_TEXTURE_PATH, &tw, &th, &tc, 4)
+	if px == nil {
+		fmt.println("failed to load duck texture, ")
+		return
+	}
+	defer stbi.image_free(px)
 
 
 
