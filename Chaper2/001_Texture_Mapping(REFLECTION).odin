@@ -68,7 +68,6 @@ mouse_callback :: proc "c" (window: glfw.WindowHandle, xpos, ypos: f64) {
 
 
 
-
 // ALL THE THINGS WE GOING TO DO - 
 /*  DOING 2 UNRELATED THINGS THAT WILL COME TOGETHER AT THE END 
 PART 1 - Turn a flat 360 degree photo into a cubemap (a skybox) ---
@@ -96,7 +95,7 @@ Bitmap :: struct {
 }
 
 make_bitmap :: proc(w,h,d,comp:int) -> Bitmap{
-   return Bitmap(w,h,d,comp,make([]f32 , w*h*d*comp)}
+   return Bitmap{w,h,d,comp,make([]f32 , w*h*d*comp)}
 }
 
 get_pixel :: proc(b: ^Bitmap,x,y:int)  -> [4]f32 { 
@@ -118,7 +117,7 @@ set_pixel :: proc(b:^Bitmap , x,y:int , c :[4]f32) {
 /* now given the pixel position (i,j) on one face of a cube (faceID - 0 to 5 , each face facesize x facesize) , returns a 3d direction that pixel points toward if the cube is 
 centered around the origin, each 'if' below is just one face of the cube( a fixed X,Y,Z) with the other 2 coordinates sliding from -1 to 1 across that face */
 
-face-coords_to_xyz :: proc(i,j , face_id , face_size : int) -> [3]f32 { 
+face_coords_to_xyz :: proc(i,j , face_id , face_size : int) -> [3]f32 { 
  a := 2.0 *f32(i) /f32(face_size) 
  b := 2.0 *f32(j) /f32(face_size)
 switch face_id { 
@@ -135,7 +134,7 @@ return {}
 /* takes a flat quirectangular photo and re arranges it into a vertical cross layout , like those unfolded dice brain excersizes , cubr faces are arranged in a cross/plus shape 
 , its a convinient layout before we split it into 6 seperate face images in the enxt step */
 
-convert_eqirect_to_vertical_cross :: proc(n:^Bitmap) -> Bitmap { 
+convert_equirect_to_vertical_cross :: proc(b:^Bitmap) -> Bitmap { 
  face_size := b.w /4 
  w := face_size *3 
  h := face_size *4 
@@ -147,6 +146,7 @@ face_offsets := [6][2]int {
  {0 , face_size} , 
  { face_size , face_size} ,
 {face_size *2 , face_size} ,
+{face_size , 0} ,
 { face_size , face_size *2} ,
 }
 
@@ -154,16 +154,16 @@ clamp_w := b.w -1
 clamp_h := b.h -1 
 
 for face in 0 ..< 6 { 
-   for i in 0 ..< face size { 
+   for i in 0 ..< face_size { 
       for j in 0 ..< face_size { 
       p := face_coords_to_xyz( i , j , face, face_size) 
 // convert this 3d direction ( thetha , phi) to langitude and latitude 
- r := amth.sqrt( p.x *p.x + p.y * p.y) 
- thetha := math.atan2(p.y , p.x) 
+ r := math.sqrt( p.x *p.x + p.y * p.y) 
+ theta := math.atan2(p.y , p.x) 
  phi := math.atan2(p.z,r)
 
 //turning those angles into an actual u,v pixel position inside the original flat equirectangular photo 
- uf := 2.0 * f32(face_size) * (theta + math.PI) .math.PI 
+ uf := 2.0 * f32(face_size) * (theta + math.PI) / math.PI 
  vf := 2.0 * f32(face_size) * (math.PI / 2.0 - phi) / math.PI
 
 /* BILINEAR INTERPOLATION - uf/vf usually land between 4 real pixels , not exactly one , so we grab all 4 pixels (u1,v1) to (u2,v2) and blend them based on how close we are to each other 
@@ -197,12 +197,43 @@ set_pixel(&result , i + face_offsets[face].x , j + face_offsets[face].y , color 
 return result 
 } 
 
+// splits the cross layout image into 6 seperate square face images , stacked one after another , this is the actual format opengl wants for a cubemap texture 
+convert_vertical_cross_to_cube_faces :: proc(b:^Bitmap) -> Bitmap { 
+face_w := b.w /3 
+face_h := b.h /4 
+cubemap := make_bitmap(face_w , face_h , 6 , b.comp) 
+
+for face in 0 ..< 6 { 
+   for j in 0 ..< face_h { 
+      for i in 0 ..< face_w { 
+      x , y : int 
+// each case just says which part of the cross layout this face's pixel (i,j) comes from 
+switch face { 
+case 0: x = i;                     y = face_h + j
+case 1: x = 2 * face_w + i;         y = face_h + j
+case 2: x = 2 * face_w - (i + 1);   y = face_h - (j + 1)
+case 3: x = 2 * face_w - (i + 1);   y = 3 * face_h - (j + 1)
+case 4: x = 2 * face_w - (i + 1);   y = b.h - (j + 1)
+case 5: x = face_w + i;             y = face_h + j
+}
+
+src_ofs := b.comp * (y * b.w + x)
+dst_ofs := b.comp * (face * face_h * face_w + j * face_w + i)
+for k in 0 ..< b.comp {
+   cubemap.pixels[dst_ofs + k] = b.pixels[src_ofs + k]
+}
+}
+}
+}
+return cubemap
+}
+
 // the full pipeline - load an HDR photo from disk , convert to vertical cross , split into 6 faces and upload as an opengl cubemap texture 
 
 load_cubemap :: proc(hdr_path : string) -> u32{ 
  w , h, comp: i32 
 path_c := fmt.ctprintf("%s", hdr_path)
-raw := stb1.loadf(path_c , &w , &h , &comp , 3) 
+raw := stbi.loadf(path_c , &w , &h , &comp , 3) 
 if raw == nil { 
   fmt.println("failed to load the hdr file: " , hdr_path) 
  return 0 
@@ -210,7 +241,7 @@ if raw == nil {
 defer stbi.image_free(raw) 
 // copying the loaded pixels into on our own bitmap so we can work with them 
 in_bitmap := make_bitmap( int(w) , int(h) , 1,3) 
-pixel := int(w) * int(h) *3
+pixel_count := int(w) * int(h) *3
 raw_slice := raw[:pixel_count] 
 copy(in_bitmap.pixels , raw_slice) 
 
@@ -245,7 +276,7 @@ os.make_directory("data/out")
 
 // PART -2 SHADERS 
 
-PerFrameData :: sturct { 
+PerFrameData :: struct { 
   model :  matrix[4, 4]f32,
   mvp : matrix[4 , 4] f32,
   camera_pos : [4]f32 ,
@@ -288,7 +319,7 @@ struct PerVertex { vec2 uv; vec3 normal; vec3 worldPos;};
 layout(location=0) in PerVertex vtx;
 layout(location=0) out vec4 out_FragColor;
 layout(binding=0) uniform sampler2D texture0;    //the duck regular color texture 
-layout(binding=0) uniform samplerCube texture1; //our cubemap sky , used for the shiny effect 
+layout(binding=1) uniform samplerCube texture1; //our cubemap sky , used for the shiny effect
 
 void main() { 
 vec3 n = normalize(vtx.normal); //surface direction at this pixel 
@@ -345,12 +376,13 @@ void main() { out_FragColor = texture(texture1, dir); }`
 
 
 make_program :: proc(vs_src , fs_src:string) -> u32 { 
-  compile :: proc*shader_type :u32 , src:string) -> u32 { 
+  compile :: proc(shader_type :u32 , src:string) -> u32 { 
   s := gl.CreateShader(shader_type)
   c_src := cstring(raw_data(src)) 
   gl.ShaderSource(s,1,&c_src , nil)
  gl.CompileShader(s) 
  ok : i32 
+ gl.GetShaderiv(s, gl.COMPILE_STATUS, &ok)
  if ok ==0 { 
  log : [4096]u8 
  gl.GetShaderInfoLog(s, 4096, nil, raw_data(log[:]))
@@ -396,27 +428,34 @@ if cubemap == 0 {
 }
 gl.Enable(gl.TEXTURE_CUBE_MAP_SEAMLESS) //hides the visible seams between cube faces 
 //LOADING THE DUCK MODEL 
-options := cgltf.options
+options: cgltf.options
 data , parse_result := cgltf.parse_file(options , DUCK_GLTF_PATH)
 if parse_result != .success {
+ fmt.println("failed to parse duck gltf, sed: " , parse_result)
+ return
+}
+defer cgltf.free(data)
+load_result := cgltf.load_buffers(options, data, DUCK_GLTF_PATH)
+if load_result != .success {
  fmt.println("FAILED TO PARSE DUCK BUFFERS, SED: " , load_result)
  return
 }
 
 mesh := data.meshes[0]
 prim := mesh.primitives[0]
-pos_sccessor , uv_accessor , normal_accessor: ^cgltf.accessor
+pos_accessor , uv_accessor , normal_accessor: ^cgltf.accessor
 for attr in prim.attributes { 
-#partial switch attr.data 
-case .positions: pos_accessor = attr.data
+#partial switch attr.type {
+case .position: pos_accessor = attr.data
 case .normal : normal_accessor = attr.data
 case .texcoord: uv_accessor = attr.data
 case :     //ignoring any other attribute types this model might have 
+}
 } 
 
 vertex_count := int(pos_accessor.count)
-vertices := make9[f32, vertex_count *8) //8 floats per vertex pos.xyz , uv.xy and normal.xyz
-for i in 0 .>< vertex_count ( 
+vertices := make([]f32, vertex_count *8) //8 floats per vertex pos.xyz , uv.xy and normal.xyz
+for i in 0 ..< vertex_count { 
  p , uv , n:[3]f32
 _ = cgltf.accessor_read_float(pos_accessor , uint(i) , &p[0] , 3)
  if uv_accessor != nil { 
@@ -470,15 +509,26 @@ vbo, ibo, vao: u32
 	defer stbi.image_free(px)
 
 duck_tex : u32 
-gl.CreateTextures(gl.TEXTURE_2D , 1 , 7duck_tex)
-gl.TextureParameteri(duck_tex , gl.TEXTURE_MIN_FILTER , gl.LINEAR_MINMAP_LINEAR)
+gl.CreateTextures(gl.TEXTURE_2D , 1 , &duck_tex)
+gl.TextureParameteri(duck_tex , gl.TEXTURE_MIN_FILTER , gl.LINEAR_MIPMAP_LINEAR)
 gl.TextureParameteri(duck_tex , gl.TEXTURE_MAG_FILTER , gl.LINEAR)
-mip_levels := i32( 1+ math.floor(math.log(f32(max(tw, th)))))
+mip_levels := i32( 1+ math.floor(math.log2(f32(max(tw, th)))))
 gl.TextureStorage2D(duck_tex, mip_levels, gl.RGBA8, tw, th)
 gl.TextureSubImage2D(duck_tex, 0, 0, 0, tw, th, gl.RGBA, gl.UNSIGNED_BYTE, px)
 gl.GenerateTextureMipmap(duck_tex)
 gl.BindTextureUnit(0, duck_tex)
 gl.BindTextureUnit(1, cubemap)
+
+prog_duck := make_program(duck_vertex_src, duck_fragment_src)
+prog_cube := make_program(cube_vertex_src, cube_fragment_src)
+
+ubo: u32
+gl.CreateBuffers(1, &ubo)
+gl.NamedBufferStorage(ubo, size_of(PerFrameData), nil, gl.DYNAMIC_STORAGE_BIT)
+gl.BindBufferBase(gl.UNIFORM_BUFFER, 0, ubo)
+
+gl.Enable(gl.DEPTH_TEST)
+gl.BindVertexArray(vao)
 
 last_frame_time: f32 
 for !glfw.WindowShouldClose(window) {
@@ -529,11 +579,3 @@ glfw.SwapBuffers(window)
 glfw.PollEvents()
 	}
 }
-
-
-
-
-
-
-
-
