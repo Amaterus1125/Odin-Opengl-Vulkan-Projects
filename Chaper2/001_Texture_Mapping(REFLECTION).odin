@@ -503,10 +503,16 @@ if glfw.GetKey(window, glfw.KEY_D) == glfw.PRESS { camera_pos += camera_right * 
 view := linalg.matrix4_look_at_f32(camera_pos, camera_pos + camera_front, camera_up)
 
 //the skybox needs a version of this movement removed(just rotaton) , otherwise walking forward will make u catch up to the sky instead of staying infinetly far away 
-sky_view := linalg.matrix4_look_at_f32([3]f32{0, 0, 0}, camera_front, camera_up)
+sky_view := linalg.matrix4_look_at_f32([3]f32{0, 0, 3}, camera_front, camera_up)
 
+aspect := f32(width) / f32(height)
+p := linalg.matrix4_perspective_f32(linalg.to_radians(f32(45.0)), aspect, 0.1, 1000.0)
+m0 := linalg.matrix4_scale_f32([3]f32{0.01, 0.01, 0.01})
+m1 := linalg.matrix4_rotate_f32(linalg.to_radians(f32(-90.0)), {1, 0, 0})
+m2 := linalg.matrix4_rotate_f32(f32(glfw.GetTime()), {0, 1, 0})
+model := m2 * m1 * m0
 
-
+cam4 := [4]f32{camera_pos.x, camera_pos.y, camera_pos.z, 1}
 
 
 
