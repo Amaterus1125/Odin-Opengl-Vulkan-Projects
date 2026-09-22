@@ -469,9 +469,18 @@ vbo, ibo, vao: u32
 	}
 	defer stbi.image_free(px)
 
+duck_tex : u32 
+gl.CreateTextures(gl.TEXTURE_2D , 1 , 7duck_tex)
+gl.TextureParameteri(duck_tex , gl.TEXTURE_MIN_FILTER , gl.LINEAR_MINMAP_LINEAR)
+gl.TextureParameteri(duck_tex , gl.TEXTURE_MAG_FILTER , gl.LINEAR)
+mip_levels := i32( 1+ math.floor(math.log(f32(max(tw, th)))))
+gl.TextureStorage2D(duck_tex, mip_levels, gl.RGBA8, tw, th)
+gl.TextureSubImage2D(duck_tex, 0, 0, 0, tw, th, gl.RGBA, gl.UNSIGNED_BYTE, px)
+gl.GenerateTextureMipmap(duck_tex)
+gl.BindTextureUnit(0, duck_tex)
+gl.BindTextureUnit(1, cubemap)
 
-
-
+last_frame_time: f32 
 
 
 
