@@ -20,7 +20,7 @@ DUCK_TEXTURE_PATH  :: "rubber_duck/DuckCM.png"  // the duck color texture
 
 // free moving camera to move around , use WASD to move and mouse to look 
 
-camera_pos   := [3]f32{0, 0, 3}    // where the camera IS in the world
+camera_pos   := [3]f32{0, 0.5, 3}    // where the camera IS in the world
 camera_front := [3]f32{0, 0, -1}   // which direction the camera is LOOKING
 camera_up    := [3]f32{0, 1, 0}    // which way is "up" for the camera
 
@@ -255,27 +255,26 @@ PerFrameData :: sturct {
 attributes , same idea as microui font atlas , its a chunk og gpu memory we are interpretating ourselves by hand instead of letting opengl automatically decode it for us */
 
 
-duck_vertex_src := `#version 460 core 
-layout(std140 , binding = 0) out PerVertex vtx; 
-     mat4 model ; 
-     mat4 MVP ; 
-    vec4 cameraPos; 
-}; 
+duck_vertex_src := `#version 460 core
+layout(std140, binding = 0) uniform PerFrameData {
+	mat4 model;
+	mat4 MVP;
+	vec4 cameraPos;
+};
+
+layout(location = 0) in vec3 in_Pos;
+layout(location = 1) in vec2 in_UV;
+layout(location = 2) in vec3 in_Normal;
+
 struct PerVertex { vec2 uv; vec3 normal; vec3 worldPos; };
 layout(location = 0) out PerVertex vtx;
-layout(std430, binding = 1) restrict readonly buffer Vertices { float data[]; } in_Vertices;
-
-vec3 getPosition(int i) { return vec3(in_Vertices.data[8*i+0], in_Vertices.data[8*i+1], in_Vertices.data[8*i+2]); }
-vec2 getTexCoord(int i) { return vec2(in_Vertices.data[8*i+3], in_Vertices.data[8*i+4]); }
-vec3 getNormal(int i)   { return vec3(in_Vertices.data[8*i+5], in_Vertices.data[8*i+6], in_Vertices.data[8*i+7]); }
 
 void main() {
-	vec3 pos = getPosition(gl_VertexID);
-	gl_Position = MVP * vec4(pos, 1.0);
+	gl_Position = MVP * vec4(in_Pos, 1.0);
 	mat3 normalMatrix = mat3(transpose(inverse(model)));
-	vtx.uv = getTexCoord(gl_VertexID);
-	vtx.normal = normalMatrix * getNormal(gl_VertexID);
-	vtx.worldPos = (model * vec4(pos, 1.0)).xyz;
+	vtx.uv = in_UV;
+	vtx.normal = normalMatrix * in_Normal;
+	vtx.worldPos = (model * vec4(in_Pos, 1.0)).xyz;
 }`
 
 //writing the reflection/refraction math actually happening
