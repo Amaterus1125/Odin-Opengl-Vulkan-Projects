@@ -389,6 +389,14 @@ glfw.SwapInterval(1)
 glfw.SetInputMode(window, glfw.CURSOR, glfw.CURSOR_DISABLED) // hides + locks the cursor, standard for a look around camera
 glfw.SetCursorPosCallback(window, mouse_callback)
 
+cubemap := load_cubemap(HDR_PATH)
+if cubemap == 0 {
+ fmt.println("cubemap load faileddddd , sed , stoping") 
+ return 
+}
+gl.Enable(gl.TEXTURE_CUBE_MAP_SEAMLESS) //hides the visible seams between cube faces 
+//LOADING THE DUCK MODEL 
+options 
  
   
 
