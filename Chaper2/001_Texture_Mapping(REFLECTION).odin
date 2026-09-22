@@ -514,6 +514,21 @@ model := m2 * m1 * m0
 
 cam4 := [4]f32{camera_pos.x, camera_pos.y, camera_pos.z, 1}
 
+// drawing the duck 
+duck_frame := PerFrameData{model = model, mvp = p * view * model, camera_pos = cam4}
+gl.NamedBufferSubData(ubo, 0, size_of(duck_frame), &duck_frame)
+gl.UseProgram(prog_duck)
+gl.DrawElements(gl.TRIANGLES, i32(len(indices)), gl.UNSIGNED_INT, nil)
+
+// drawing the skybox
+sky_frame := PerFrameData{model = linalg.MATRIX4F32_IDENTITY, mvp = p * sky_view, camera_pos = cam4}
+gl.NamedBufferSubData(ubo, 0, size_of(sky_frame), &sky_frame)
+gl.UseProgram(prog_cube)
+gl.DrawArrays(gl.TRIANGLES, 0, 36)
+glfw.SwapBuffers(window)
+glfw.PollEvents()
+	}
+}
 
 
 
