@@ -16,6 +16,62 @@ HDR_PATH   :: "street.hdr"   //an equirectangle 360 degree hdr photo , common en
 DUCK_GLTF_PATH :: "avocado_duck/scene.gltf"  // duck model or avocado model from earlier projects ( i will upload the duck model) 
 DUCK_TEXTURE_PATH  :: "rubber_duck/DuckCM.png"  // the duck color texture 
 
+
+
+
+
+
+// free moving camera to move around , use WASD to move and mouse to look 
+
+camera_pos   := [3]f32{0, 0, 3}    // where the camera IS in the world
+camera_front := [3]f32{0, 0, -1}   // which direction the camera is LOOKING
+camera_up    := [3]f32{0, 1, 0}    // which way is "up" for the camera
+
+camera_yaw:   f32 = -90.0 // left/right look angle, in degrees
+camera_pitch: f32 = 0.0   // up/down look angle, in degrees
+
+last_mouse_x, last_mouse_y: f32
+first_mouse := true // avoids a big jump on the very first mouse movement
+
+// glfw calls this automatically whenever the mouse moves. we turn that
+// movement into a change in yaw/pitch, then rebuild the "front" direction
+// vector from those two angles (this is standard "FPS camera" math)
+mouse_callback :: proc "c" (window: glfw.WindowHandle, xpos, ypos: f64) {
+	context = runtime.default_context()
+
+	if first_mouse {
+		last_mouse_x = f32(xpos)
+		last_mouse_y = f32(ypos)
+		first_mouse = false
+	}
+
+	xoffset := (f32(xpos) - last_mouse_x) * 0.1 // 0.1 = mouse sensitivity, raise/lower to taste
+	yoffset := (last_mouse_y - f32(ypos)) * 0.1 // reversed: screen y grows downward, we want up = positive
+	last_mouse_x = f32(xpos)
+	last_mouse_y = f32(ypos)
+
+	camera_yaw += xoffset
+	camera_pitch = clamp(camera_pitch + yoffset, -89.0, 89.0) // stops you from flipping upside down
+
+	yaw_r := linalg.to_radians(camera_yaw)
+	pitch_r := linalg.to_radians(camera_pitch)
+	camera_front = linalg.normalize([3]f32{
+		math.cos(yaw_r) * math.cos(pitch_r),
+		math.sin(pitch_r),
+		math.sin(yaw_r) * math.cos(pitch_r),
+	})
+}
+
+
+
+
+
+
+
+
+
+
+
 // ALL THE THINGS WE GOING TO DO - 
 /*  DOING 2 UNRELATED THINGS THAT WILL COME TOGETHER AT THE END 
 PART 1 - Turn a flat 360 degree photo into a cubemap (a skybox) ---
@@ -334,8 +390,9 @@ main ::proc() {
 	glfw.MakeContextCurrent(window)
 	gl.load_up_to(4, 6, glfw.gl_set_proc_address)
 	glfw.SwapInterval(1)
-  
 
+ 
+  
 
 
 
