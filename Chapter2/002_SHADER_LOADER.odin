@@ -77,7 +77,7 @@ case strings.has_suffix(file_name, ".vert"): return gl.VERTEX_SHADER
 	case strings.has_suffix(file_name, ".tese"): return gl.TESS_EVALUATION_SHADER
 	case strings.has_suffix(file_name, ".comp"): return gl.COMPUTE_SHADER
 } 
-fmt.println("unknown shader file extension: sed: , file_name) 
+fmt.println("unknown shader file extension: sed" , file_name) 
 return 0 
 } 
 
