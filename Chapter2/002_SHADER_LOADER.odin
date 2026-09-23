@@ -31,12 +31,12 @@ code := string(data[start:])
 // handleing #include "file.glsl" directives 
 /* glsl has no built in way to split shader code across multiple files, so this is a hand rolled version , find the #include and pull out the file name between < and >, load that file contents and paste it in place of the #include line */
 for { 
-pos := string.index(code , "#include")
+pos := strings.index(code , "#include")
 if pos == -1 (
 break   //no more include lines left and we are done 
 } 
-p1 := string.index(code[pos:] , "<")
-p2 := string.index(code[pos:], ">")
+p1 := strings.index(code[pos:] , "<")
+p2 := strings.index(code[pos:], ">")
 if p1 == -1 || p2 == -1 || p2 <= p1 { 
  fmt.printfln("Error while loading the shader program:\n%s" , code) 
  return "" 
