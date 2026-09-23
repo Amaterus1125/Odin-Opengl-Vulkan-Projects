@@ -83,7 +83,7 @@ return 0
 
 // PART 2 - the shader wrapper 
 
-Shader :; struct { 
+Shader :: struct { 
   type : u32 ,
   handle : u32 ,
 } 
