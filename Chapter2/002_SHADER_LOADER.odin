@@ -121,4 +121,133 @@ gl.DeleteShader(s.handle)
 
 //PART - 3 - the program wrapper , the program on which the above thing will work on 
 
+Program :; struct { 
+handle : u32,
+} 
+
+// takes any number of already compiled shaders ( 2 for a normal vertex+fragment pair , or more if we are also using geometry shader and linkes them together into a usable program 
+create_program :: proc(shaders: ..Shader) -> Program { 
+handle := gl.CreateProgram() 
+for s in shaders { 
+gl.AttachShader(handle , s.handle) 
+} 
+gl.LinkProgram(handle) 
+print_program_info_log(handle) 
+return Program(handle)
+} 
+
+print_program_info_log :: proc(handle: u32) { 
+buffer : [8192]u8
+length: i32
+gl.GetProgramInfoLog(handle, size_of(buffer), &length, raw_data(buffer[:]))
+if length > 0 {
+fmt.println(string(buffer[:length]))
+}
+}
+
+destroy_program :: proc(p: ^Program) {
+	gl.DeleteProgram(p.handle)
+}
+
+use_program :: proc(p: ^Program) {
+	gl.UseProgram(p.handle)
+}
+
+// EXAMPLE PROGRAM , FOR THIS ABOVE CODE TO RUN ON SOMETHING - A SIMPLE RGB TRIANGLE 
+
+
+
+
+
+example_usage :: proc() {
+	shader_vertex := create_shader_from_file("data/shaders/chapter03/GL02.vert")
+	defer destroy_shader(&shader_vertex)
+
+	shader_geometry := create_shader_from_file("data/shaders/chapter03/GL02.geom")
+	defer destroy_shader(&shader_geometry)
+
+	shader_fragment := create_shader_from_file("data/shaders/chapter03/GL02.frag")
+	defer destroy_shader(&shader_fragment)
+
+	program := create_program(shader_vertex, shader_geometry, shader_fragment)
+	defer destroy_program(&program)
+
+	use_program(&program)
+}
+
+//using PROGRAM PIPELINES -- an alternative way of linking shaders together into one program , instead of each shader getting its own seperate mini program , we just mix-match them at draw timw , handly if we want to reuse the same vertex shader without needing a full combination of every pairing 
+example_program_pipeline :: proc(vertex_src, fragment_src: string) {
+	vs_c := cstring(raw_data(vertex_src))
+	fs_c := cstring(raw_data(fragment_src))
+
+	vs := gl.CreateShaderProgramv(gl.VERTEX_SHADER, 1, &vs_c)
+	fs := gl.CreateShaderProgramv(gl.FRAGMENT_SHADER, 1, &fs_c)
+
+	pipeline: u32
+	gl.CreateProgramPipelines(1, &pipeline)
+	gl.UseProgramStages(pipeline, gl.VERTEX_SHADER_BIT, vs)
+	gl.UseProgramStages(pipeline, gl.FRAGMENT_SHADER_BIT, fs)
+	gl.BindProgramPipeline(pipeline)
+}
+
+// now creating an actual runnable example 
+/*  everything above this point is just a toolbox  procs meant to be reused, not run on their own. this part actually opens a window and draws a triangle USING that toolbox, so you can see create_shader , create_program genuinely working instead of only compiling.
+to keep this runnable with no extra files needed, the shader source is written directly as strings here (create_shader takes source text directly) rather than loaded from .vert/.frag files on disk but it's calling the exact same create_shader/create_program wrappers
+either way. if you DO want to test the file-loading + #include path specifically, save the vertex_src/fragment_src strings below into actual "triangle.vert" / "triangle.frag" files and swap the create_shader calls for create_shader_from_file instead     */
+
+main :: proc() {
+	glfw.Init()
+	defer glfw.Terminate()
+
+	glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 4)
+	glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 6)
+	glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
+
+	window := glfw.CreateWindow(600, 600, "Shader Loader Demo", nil, nil)
+	glfw.MakeContextCurrent(window)
+	gl.load_up_to(4, 6, glfw.gl_set_proc_address)
+
+	vertex_src := `#version 460 core
+const vec2 pos[3] = vec2[3](vec2(-0.6, -0.6), vec2(0.6, -0.6), vec2(0.0, 0.6));
+const vec3 col[3] = vec3[3](vec3(1,0,0), vec3(0,1,0), vec3(0,0,1));
+layout(location = 0) out vec3 vColor;
+void main() {
+	gl_Position = vec4(pos[gl_VertexID], 0.0, 1.0);
+	vColor = col[gl_VertexID];
+}`
+
+	fragment_src := `#version 460 core
+layout(location = 0) in vec3 vColor;
+layout(location = 0) out vec4 out_FragColor;
+void main() {
+	out_FragColor = vec4(vColor, 1.0);
+}`
+
+	// this is the part actually demonstrating the wrapper code above
+	shader_vertex := create_shader(gl.VERTEX_SHADER, vertex_src)
+	defer destroy_shader(&shader_vertex)
+
+	shader_fragment := create_shader(gl.FRAGMENT_SHADER, fragment_src)
+	defer destroy_shader(&shader_fragment)
+
+	program := create_program(shader_vertex, shader_fragment)
+	defer destroy_program(&program)
+
+	vao: u32
+	gl.GenVertexArrays(1, &vao)
+	gl.BindVertexArray(vao) // opengl still wants some vao bound, even though this shader hardcodes its own positions
+
+	for !glfw.WindowShouldClose(window) {
+		gl.Viewport(0, 0, 600, 600)
+		gl.ClearColor(0.1, 0.1, 0.1, 1.0)
+		gl.Clear(gl.COLOR_BUFFER_BIT)
+
+		use_program(&program) // the wrapper doing its job every frame
+		gl.DrawArrays(gl.TRIANGLES, 0, 3)
+
+		glfw.SwapBuffers(window)
+		glfw.PollEvents()
+	}
+}
+
     
