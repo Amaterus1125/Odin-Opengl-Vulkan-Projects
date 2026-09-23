@@ -133,7 +133,7 @@ gl.AttachShader(handle , s.handle)
 } 
 gl.LinkProgram(handle) 
 print_program_info_log(handle) 
-return Program(handle)
+return Program{handle}
 } 
 
 print_program_info_log :: proc(handle: u32) { 
