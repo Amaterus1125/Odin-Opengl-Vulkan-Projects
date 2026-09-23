@@ -28,4 +28,6 @@ if len(data) >= 3 && data[0] == bom[0] && data[1] == bom[1] && data[2] == bom[2]
 }
 code := string(data[start:]) 
 
-// handleing #include 
+// handleing #include "file.glsl" directives 
+/* glsl has no built in way to split shader code across multiple files, so this is a hand rolled version , find the #include and pull out the file name between < and >, load that file contents and paste it in place of the #include line */
+for {
