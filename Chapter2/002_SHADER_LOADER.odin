@@ -121,7 +121,7 @@ gl.DeleteShader(s.handle)
 
 //PART - 3 - the program wrapper , the program on which the above thing will work on 
 
-Program :; struct { 
+Program :: struct { 
 handle : u32,
 } 
 
