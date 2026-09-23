@@ -49,7 +49,7 @@ include_code := read_shader_file(include_name)
 
 before := code[:pos] 
 after := code[p2 +1:]
-code = fmt.tprintf("%s%s%s" , before , included_code , after) 
+code = fmt.tprintf("%s%s%s" , before , include_code , after) 
 } 
 return code 
 } 
