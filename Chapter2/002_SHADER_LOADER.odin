@@ -54,6 +54,71 @@ code = fmt.tprintf("%s%s%s" , before , included_code , after)
 return code 
 } 
 
+//prints shader source with a line number in front of every line , makes it trivial to match a glsl compiler error (like error on line 12) straight back to the actual line in yr source 
+print_shader_source :: proc(text:string) { 
+ line := 1 
+ fmt.printf("\n(%3) " , line) 
+ for ch in text { 
+     if ch == '\n' { 
+      line += 1 
+       fmt.printf("\n(%3d) ", line) 
+    } else if ch == '\r' { 
+   // skip - windows style line endings have this extra character , we don't want it to mess our printout 
+} else { fmt.print(ch) } 
+}  fmt.println() } 
 
+//now looking at a file name extension to figure out what kind of shader it is ( vertex , fragment or any other) , avoid needing to pass the type seperately everytime we load a shader by filename 
+shader_type_from_filename :: proc(file_name : string) -> u32 { 
+ switch { 
+case strings.has_suffix(file_name, ".vert"): return gl.VERTEX_SHADER
+	case strings.has_suffix(file_name, ".frag"): return gl.FRAGMENT_SHADER
+	case strings.has_suffix(file_name, ".geom"): return gl.GEOMETRY_SHADER
+	case strings.has_suffix(file_name, ".tesc"): return gl.TESS_CONTROL_SHADER
+	case strings.has_suffix(file_name, ".tese"): return gl.TESS_EVALUATION_SHADER
+	case strings.has_suffix(file_name, ".comp"): return gl.COMPUTE_SHADER
+} 
+fmt.println("unknown shader file extension: sed: , file_name) 
+return 0 
+} 
+
+// PART 2 - the shader wrapper 
+
+Shader :; struct { 
+  type : u32 ,
+  handle : u32 ,
+} 
+
+//compile a shader from raw source text which we may already have in memeory 
+create_shader :: proc(type: u32 , text: string) -> Shader { 
+ handle := gl.CreateShader(type) 
+c_text := cstring(raw_data(text))
+gl.ShaderSource(handle, 1, &c_text, nil)
+gl.CompileShader(handle)
+
+/* now will check whether the compiler had anything to say , an empty log usually means that it compiled fine , but any actual message is worth showing , and for this project we print the source wirh line numbers 
+alongside it so the error is very easy to track */
+
+buffer : [8192]u8    //The 8192 is just the size of the stack buffer allocated to hold the shader compiler's info log (error/warning messages), 8192 - 8 kib 
+length : i32 
+gl.GetShaderInfoLog(handle, size_of(buffer) , &length , raw_data(buffer[:]))
+if length > 0 { 
+fmt.println(string(buffer[:length]))
+print_shader_source(text) 
+} 
+return Shader{type , handle} 
+} 
+
+//compiles a shader straight from a file path and figures out the shader type from the extension and loads the source for us 
+create_shader_from_file :: proc(file_name : string) -> Shader { 
+type := shader_type_from_filename(file_name) 
+source := read_shader_file(file_name) 
+return create_shader(type, source) 
+} 
+// now freeing the shader gpu resources , call this with defer right after creating the shader , so it is aautomatically cleaned whenever the function surrounding it ends , this is odin standin for C++ destructors 
+destroy_shader :: proc(s : ^Shader) { 
+gl.DeleteShader(s.handle) 
+} 
+
+//PART - 3 - the program wrapper , the program on which the above thing will work on 
 
     
