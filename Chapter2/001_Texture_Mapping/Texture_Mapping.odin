@@ -1,1 +1,581 @@
+//THE COMMON IMPORTS BEFORE RUNNING THIS HUGE FILE 
+package main
 
+import "core:fmt"
+import "core:math"
+import "core:math/linalg"
+import "core:os"
+
+import "vendor:glfw"
+import gl "vendor:OpenGL"
+import cgltf "vendor:cgltf"
+import stbi "vendor:stb/image"
+import "base:runtime"
+
+//EDIT THESE 3 PATHS TO POINT AT YOUR OWN FILES BEFORE RUNNING - 
+HDR_PATH   :: "street.hdr"   //an equirectangle 360 degree hdr photo , common enviornmental maps we can find online easily
+DUCK_GLTF_PATH :: "rubber_duck/scene.gltf"  // duck model or avocado model from earlier projects ( i will upload the duck model) 
+DUCK_TEXTURE_PATH  :: "rubber_duck/DuckCM.png"  // the duck color texture 
+
+
+// free moving camera to move around , use WASD to move and mouse to look 
+
+camera_pos   := [3]f32{0, 0.5, 3}    // where the camera IS in the world
+camera_front := [3]f32{0, 0, -1}   // which direction the camera is LOOKING
+camera_up    := [3]f32{0, 1, 0}    // which way is "up" for the camera
+
+camera_yaw:   f32 = -90.0 // left/right look angle, in degrees
+camera_pitch: f32 = 0.0   // up/down look angle, in degrees
+
+last_mouse_x, last_mouse_y: f32
+first_mouse := true // avoids a big jump on the very first mouse movement
+
+// glfw calls this automatically whenever the mouse moves. we turn that
+// movement into a change in yaw/pitch, then rebuild the "front" direction
+// vector from those two angles (this is standard "FPS camera" math)
+mouse_callback :: proc "c" (window: glfw.WindowHandle, xpos, ypos: f64) {
+	context = runtime.default_context()
+
+	if first_mouse {
+		last_mouse_x = f32(xpos)
+		last_mouse_y = f32(ypos)
+		first_mouse = false
+	}
+
+	xoffset := (f32(xpos) - last_mouse_x) * 0.1 // 0.1 = mouse sensitivity, raise/lower to taste
+	yoffset := (last_mouse_y - f32(ypos)) * 0.1 // reversed: screen y grows downward, we want up = positive
+	last_mouse_x = f32(xpos)
+	last_mouse_y = f32(ypos)
+
+	camera_yaw += xoffset
+	camera_pitch = clamp(camera_pitch + yoffset, -89.0, 89.0) // stops you from flipping upside down
+
+	yaw_r := linalg.to_radians(camera_yaw)
+	pitch_r := linalg.to_radians(camera_pitch)
+	camera_front = linalg.normalize([3]f32{
+		math.cos(yaw_r) * math.cos(pitch_r),
+		math.sin(pitch_r),
+		math.sin(yaw_r) * math.cos(pitch_r),
+	})
+}
+
+
+
+
+
+
+
+
+
+
+// ALL THE THINGS WE GOING TO DO - 
+/*  DOING 2 UNRELATED THINGS THAT WILL COME TOGETHER AT THE END 
+PART 1 - Turn a flat 360 degree photo into a cubemap (a skybox) ---
+so from a 360 degree camera we get a equirectangular image , one flat rectangle where the left/right edges wrap around like a globe unrolled flat (like a world map)
+and we want to turn that into a cubemap instead , 6 square images , one for each face of the cube , so we can wrap it around the scene like a box.
+To do this for every pixel on each of the 6 cube faces , which direction does it point? and where on the original flat photo does that SAME direction appear?" That's `faceCoordsToXYZ` (gives us the 3D direction) combined
+with converting that direction into (theta, phi) , longitude and latitude, basically, exactly like coordinates on a globe , using `atan2`. Those longitude/latitude values are then just proportional
+positions in the flat photo. We grab the color from there and copy it onto the cube face. Do this for all 6 faces and you've converted formats. */
+
+/* Since the calculated position often lands BETWEEN 4 actual pixels (not exactly on one), we blend those 4 neighboring pixels together based on how close we are to each and this is called BILINEAR INTERPOLATION, 
+and it's just a weighted average using how far we are from each neighbor. */
+
+// PART 2 - MAKEING THE FIGURE LOOK REFLECTIVE AND REFRACTIVE 
+/* in the fragment shader , for each pixel of the duck we calculate 2 rays, The reflection ray and The refractive ray ,by sampling the cubemap sky in both of those directions , then blend them together, how much we 
+blend towards reflection vs refraction depends on viewing angle , this is a real physical effect known as FRENSEL EFFECT, We approximate the real physics using "Schlick's approximation", a well-known formula that's cheap
+to compute and looks convincingly close to correct. */
+
+
+//PART 1 - BITMAP HELPERS 
+/* a simple in memory image , width ,height and depth and how many color channels per pixel (3 = RGB) , we only deal with floating point color channels here as HDR images store much brightness and darker range than a normal 0-255 range image  */
+
+Bitmap :: struct { 
+   w,h,d , comp: int ,
+   pixels : []f32, 
+}
+
+make_bitmap :: proc(w,h,d,comp:int) -> Bitmap{
+   return Bitmap{w,h,d,comp,make([]f32 , w*h*d*comp)}
+}
+
+get_pixel :: proc(b: ^Bitmap,x,y:int)  -> [4]f32 { 
+    ofs := b.comp * (y*b.w +x)
+    c: [4]f32 
+    for k in 0 ..<min(b.comp ,4) {
+   c[k] = b.pixels[ofs + k ]
+}
+return c 
+}
+
+set_pixel :: proc(b:^Bitmap , x,y:int , c :[4]f32) { 
+   ofs := b.comp * (y*b.w+ x) 
+   for k in 0 ..<b.comp {  
+      b.pixels[ofs+k] = c[k] 
+}
+}
+
+/* now given the pixel position (i,j) on one face of a cube (faceID - 0 to 5 , each face facesize x facesize) , returns a 3d direction that pixel points toward if the cube is 
+centered around the origin, each 'if' below is just one face of the cube( a fixed X,Y,Z) with the other 2 coordinates sliding from -1 to 1 across that face */
+
+face_coords_to_xyz :: proc(i,j , face_id , face_size : int) -> [3]f32 { 
+ a := 2.0 *f32(i) /f32(face_size) 
+ b := 2.0 *f32(j) /f32(face_size)
+switch face_id { 
+case 0: return {-1.0, a - 1.0, b - 1.0}
+case 1: return {a - 1.0, -1.0, 1.0 - b}
+case 2: return {1.0, a - 1.0, 1.0 - b}
+case 3: return {1.0 - a, 1.0, 1.0 - b}
+case 4: return {b - 1.0, a - 1.0, 1.0}
+case 5: return {1.0 - b, a - 1.0, -1.0}
+}
+return {} 
+} 
+
+/* takes a flat quirectangular photo and re arranges it into a vertical cross layout , like those unfolded dice brain excersizes , cubr faces are arranged in a cross/plus shape 
+, its a convinient layout before we split it into 6 seperate face images in the enxt step */
+
+convert_equirect_to_vertical_cross :: proc(b:^Bitmap) -> Bitmap { 
+ face_size := b.w /4 
+ w := face_size *3 
+ h := face_size *4 
+ result := make_bitmap(w,h,1,3) 
+
+//where each of the faces sits within the cross shaped layout 
+face_offsets := [6][2]int {
+ {face_size , face_size *3} ,
+ {0 , face_size} , 
+ { face_size , face_size} ,
+{face_size *2 , face_size} ,
+{face_size , 0} ,
+{ face_size , face_size *2} ,
+}
+
+clamp_w := b.w -1
+clamp_h := b.h -1 
+
+for face in 0 ..< 6 { 
+   for i in 0 ..< face_size { 
+      for j in 0 ..< face_size { 
+      p := face_coords_to_xyz( i , j , face, face_size) 
+// convert this 3d direction ( thetha , phi) to langitude and latitude 
+ r := math.sqrt( p.x *p.x + p.y * p.y) 
+ theta := math.atan2(p.y , p.x) 
+ phi := math.atan2(p.z,r)
+
+//turning those angles into an actual u,v pixel position inside the original flat equirectangular photo 
+ uf := 2.0 * f32(face_size) * (theta + math.PI) / math.PI 
+ vf := 2.0 * f32(face_size) * (math.PI / 2.0 - phi) / math.PI
+
+/* BILINEAR INTERPOLATION - uf/vf usually land between 4 real pixels , not exactly one , so we grab all 4 pixels (u1,v1) to (u2,v2) and blend them based on how close we are to each other 
+, s and t are how far ( 0.0 to 1.0) we are between them on each axis */
+
+u1 := clamp( int(math.floor(uf)) , 0 , clamp_w) 
+v1 := clamp(int(math.floor(vf)) , 0 , clamp_h) 
+u2 := clamp(u1 +1 , 0 , clamp_w) 
+v2 := clamp(v1 + 1 , 0 , clamp_h) 
+s := uf - f32(u1) 
+t := vf - f32(v1) 
+
+ca := get_pixel(b , u1, v1) 
+cb := get_pixel(b, u2, v1)
+cc := get_pixel(b, u1, v2)
+cd := get_pixel(b, u2, v2)
+
+// writing the actual weighted blend , closer corners count more 
+ color : [4]f32 
+ for k in 0 ..<4 { 
+ color[k] = 
+ ca[k] * (1 - s) * (1 - t) +
+cb[k] * s * (1 - t) +
+cc[k] * (1 - s) * t +
+cd[k] * s * t
+}
+set_pixel(&result , i + face_offsets[face].x , j + face_offsets[face].y , color ) 
+} 
+}
+} 
+return result 
+} 
+
+// splits the cross layout image into 6 seperate square face images , stacked one after another , this is the actual format opengl wants for a cubemap texture 
+convert_vertical_cross_to_cube_faces :: proc(b:^Bitmap) -> Bitmap { 
+face_w := b.w /3 
+face_h := b.h /4 
+cubemap := make_bitmap(face_w , face_h , 6 , b.comp) 
+
+for face in 0 ..< 6 { 
+   for j in 0 ..< face_h { 
+      for i in 0 ..< face_w { 
+      x , y : int 
+// each case just says which part of the cross layout this face's pixel (i,j) comes from 
+switch face { 
+case 0: x = i;                     y = face_h + j
+case 1: x = 2 * face_w + i;         y = face_h + j
+case 2: x = 2 * face_w - (i + 1);   y = face_h - (j + 1)
+case 3: x = 2 * face_w - (i + 1);   y = 3 * face_h - (j + 1)
+case 4: x = 2 * face_w - (i + 1);   y = b.h - (j + 1)
+case 5: x = face_w + i;             y = face_h + j
+}
+
+src_ofs := b.comp * (y * b.w + x)
+dst_ofs := b.comp * (face * face_h * face_w + j * face_w + i)
+for k in 0 ..< b.comp {
+   cubemap.pixels[dst_ofs + k] = b.pixels[src_ofs + k]
+}
+}
+}
+}
+return cubemap
+}
+
+// the full pipeline - load an HDR photo from disk , convert to vertical cross , split into 6 faces and upload as an opengl cubemap texture 
+
+load_cubemap :: proc(hdr_path : string) -> u32{ 
+ w , h, comp: i32 
+path_c := fmt.ctprintf("%s", hdr_path)
+raw := stbi.loadf(path_c , &w , &h , &comp , 3) 
+if raw == nil { 
+  fmt.println("failed to load the hdr file: " , hdr_path) 
+ return 0 
+} 
+defer stbi.image_free(raw) 
+// copying the loaded pixels into on our own bitmap so we can work with them 
+in_bitmap := make_bitmap( int(w) , int(h) , 1,3) 
+pixel_count := int(w) * int(h) *3
+raw_slice := raw[:pixel_count] 
+copy(in_bitmap.pixels , raw_slice) 
+
+cross := convert_equirect_to_vertical_cross(&in_bitmap)
+	defer delete(cross.pixels)
+
+//optional if you want to peek at the cross-layout image for debugging or seeing it 
+os.make_directory("data/out")
+	stbi.write_hdr("data/out/screen.hdr", i32(cross.w), i32(cross.h), i32(cross.comp), raw_data(cross.pixels))
+
+	cm := convert_vertical_cross_to_cube_faces(&cross)
+	defer delete(cm.pixels)
+
+	tex: u32
+	gl.CreateTextures(gl.TEXTURE_CUBE_MAP, 1, &tex)
+	gl.TextureParameteri(tex, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TextureParameteri(tex, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	gl.TextureParameteri(tex, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE)
+	gl.TextureParameteri(tex, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+	gl.TextureParameteri(tex, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+	gl.TextureStorage2D(tex, 1, gl.RGB32F, i32(cm.w), i32(cm.h))
+
+	face_pixel_count := cm.w * cm.h * cm.comp
+	for i in 0 ..< 6 {
+		face_data := cm.pixels[i * face_pixel_count:(i + 1) * face_pixel_count]
+		gl.TextureSubImage3D(tex, 0, 0, 0, i32(i), i32(cm.w), i32(cm.h), 1, gl.RGB, gl.FLOAT, raw_data(face_data))
+	}
+
+	return tex
+}
+
+
+// PART -2 SHADERS 
+
+PerFrameData :: struct { 
+  model :  matrix[4, 4]f32,
+  mvp : matrix[4 , 4] f32,
+  camera_pos : [4]f32 ,
+} 
+
+/* draws the duck , this vertex shader just positions each vertex normally , and reads position/uv/normal out of a raw buffer of floats rather than the usual vertex 
+attributes , same idea as microui font atlas , its a chunk og gpu memory we are interpretating ourselves by hand instead of letting opengl automatically decode it for us */
+
+
+duck_vertex_src := `#version 460 core
+layout(std140, binding = 0) uniform PerFrameData {
+	mat4 model;
+	mat4 MVP;
+	vec4 cameraPos;
+};
+
+layout(location = 0) in vec3 in_Pos;
+layout(location = 1) in vec2 in_UV;
+layout(location = 2) in vec3 in_Normal;
+
+struct PerVertex { vec2 uv; vec3 normal; vec3 worldPos; };
+layout(location = 0) out PerVertex vtx;
+
+void main() {
+	gl_Position = MVP * vec4(in_Pos, 1.0);
+	mat3 normalMatrix = mat3(transpose(inverse(model)));
+	vtx.uv = in_UV;
+	vtx.normal = normalMatrix * in_Normal;
+	vtx.worldPos = (model * vec4(in_Pos, 1.0)).xyz;
+}`
+
+//writing the reflection/refraction math actually happening
+duck_fragment_src := `#version 460 core 
+layout(std140, binding = 0) uniform PerFrameData {
+	mat4 model;
+	mat4 MVP;
+	vec4 cameraPos;
+};
+struct PerVertex { vec2 uv; vec3 normal; vec3 worldPos;};
+layout(location=0) in PerVertex vtx;
+layout(location=0) out vec4 out_FragColor;
+layout(binding=0) uniform sampler2D texture0;    //the duck regular color texture 
+layout(binding=1) uniform samplerCube texture1; //our cubemap sky , used for the shiny effect
+
+void main() { 
+vec3 n = normalize(vtx.normal); //surface direction at this pixel 
+vec3 v = normalize(cameraPos.xyz - vtx.worldPos); //our cubemap sky , used for shiny effect 
+// mirror-bounce direction (reflection) and bent-through direction (refraction)
+	vec3 reflection = -normalize(reflect(v, n));
+    float eta = 1.00 / 1.31;                         // ratio of how much light bends roughly water/rubber-ish
+	vec3 refraction = -normalize(refract(v, n, eta));
+    
+// SCHLICK'S APPROXIMATION (the Fresnel effect) - meaning the rate of reflection or refraction depends on which angle u looking from , happens in real life 
+// R0 = how reflective the surface is when looking STRAIGHT AT it (angle = 0)
+ const float R0 = ((1.0 - eta) * (1.0 - eta)) / ((1.0 + eta) * (1.0 + eta));
+// as the viewing angle becomes more grazing/sideways, reflectivity rises toward 1.0 and that's what this pow(...) term is doing
+const float Rtheta = R0 + (1.0 - R0) * pow((1.0 - dot(-v, n)), 5.0);
+
+vec4 color = texture(texture0, vtx.uv);
+vec4 colorRefl = texture(texture1, reflection);
+vec4 colorRefr = texture(texture1, refraction);
+
+// blend the reflection and refraction based on that angle dependent factor and then multiply by the duck;s own base color or texture 
+color = color * mix(colorRefl, colorRefr, Rtheta);
+out_FragColor = color;
+}`
+
+/*now writing the skybox itself , same as hardcore a cube corners directly in the shader trick from our earlier gradient cube example , just scaled way up (100x) so it 
+surrounds the whole scene instead of a flat color it looks uo to the cubemap texture using its own position as direction  */
+
+cube_vertex_src := `#version 460 core 
+layout(std140, binding = 0) uniform PerFrameData {
+	mat4 model;
+	mat4 MVP;
+	vec4 cameraPos;
+};
+layout(location = 0) out vec3 dir;
+const vec3 pos[8] = vec3[8](
+vec3(-1,-1, 1), vec3( 1,-1, 1), vec3( 1, 1, 1), vec3(-1, 1, 1),
+vec3(-1,-1,-1), vec3( 1,-1,-1), vec3( 1, 1,-1), vec3(-1, 1,-1));
+const int indices[36] = int[36](                                         //36 points to make the cubemap skybox itself with hardcore cube corners 
+0,1,2, 2,3,0,  1,5,6, 6,2,1,  7,6,5, 5,4,7,
+4,0,3, 3,7,4,  4,5,1, 1,0,4,  3,2,6, 6,7,3);
+void main() {
+	int idx = indices[gl_VertexID];
+	gl_Position = MVP * vec4(100.0 * pos[idx], 1.0);
+	dir = pos[idx];
+}`
+
+//writing the cube fragment now , with location =0 , and binding =1 and giving it the texture we want it to have 
+cube_fragment_src := `#version 460 core
+layout(location = 0) in vec3 dir;
+layout(location = 0) out vec4 out_FragColor;
+layout(binding = 1) uniform samplerCube texture1;
+void main() { out_FragColor = texture(texture1, dir); }`
+
+
+
+make_program :: proc(vs_src , fs_src:string) -> u32 { 
+  compile :: proc(shader_type :u32 , src:string) -> u32 { 
+  s := gl.CreateShader(shader_type)
+  c_src := cstring(raw_data(src)) 
+  gl.ShaderSource(s,1,&c_src , nil)
+ gl.CompileShader(s) 
+ ok : i32 
+ gl.GetShaderiv(s, gl.COMPILE_STATUS, &ok)
+ if ok ==0 { 
+ log : [4096]u8 
+ gl.GetShaderInfoLog(s, 4096, nil, raw_data(log[:]))
+fmt.println("shader error:", string(log[:]))
+}
+return s
+}
+// the final part - about linking the program and attaching both vertex and fragment shaders
+p := gl.CreateProgram()
+	gl.AttachShader(p, compile(gl.VERTEX_SHADER, vs_src))
+	gl.AttachShader(p, compile(gl.FRAGMENT_SHADER, fs_src))
+	gl.LinkProgram(p)
+    ok: i32
+	gl.GetProgramiv(p, gl.LINK_STATUS, &ok)
+	if ok == 0 {
+    log :[4096]u8 
+    gl.GetProgramInfoLog(p, 4096, nil, raw_data(log[:]))
+		fmt.println("link error:", string(log[:]))
+	}
+	return p
+}
+
+
+// THE ENTIRE MAIN PART FOR THE CODE EXECUTION AND ALL THE WINDOW STUFF and creating VBO , VA0 , EBO 
+
+main ::proc() { 
+ glfw.Init() 
+ defer glfw.Terminate() 
+ glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 4)
+glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 6)
+glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
+ window := glfw.CreateWindow(1280, 720, "reflecting duck", nil, nil)
+glfw.MakeContextCurrent(window)
+gl.load_up_to(4, 6, glfw.gl_set_proc_address)
+glfw.SwapInterval(1)
+glfw.SetInputMode(window, glfw.CURSOR, glfw.CURSOR_DISABLED) // hides + locks the cursor, standard for a look around camera
+glfw.SetCursorPosCallback(window, mouse_callback)
+
+cubemap := load_cubemap(HDR_PATH)
+if cubemap == 0 {
+ fmt.println("cubemap load faileddddd , sed , stoping") 
+ return 
+}
+gl.Enable(gl.TEXTURE_CUBE_MAP_SEAMLESS) //hides the visible seams between cube faces 
+//LOADING THE DUCK MODEL 
+options: cgltf.options
+data , parse_result := cgltf.parse_file(options , DUCK_GLTF_PATH)
+if parse_result != .success {
+ fmt.println("failed to parse duck gltf, sed: " , parse_result)
+ return
+}
+defer cgltf.free(data)
+load_result := cgltf.load_buffers(options, data, DUCK_GLTF_PATH)
+if load_result != .success {
+ fmt.println("FAILED TO PARSE DUCK BUFFERS, SED: " , load_result)
+ return
+}
+
+mesh := data.meshes[0]
+prim := mesh.primitives[0]
+pos_accessor , uv_accessor , normal_accessor: ^cgltf.accessor
+for attr in prim.attributes { 
+#partial switch attr.type {
+case .position: pos_accessor = attr.data
+case .normal : normal_accessor = attr.data
+case .texcoord: uv_accessor = attr.data
+case :     //ignoring any other attribute types this model might have 
+}
+} 
+
+vertex_count := int(pos_accessor.count)
+vertices := make([]f32, vertex_count *8) //8 floats per vertex pos.xyz , uv.xy and normal.xyz
+for i in 0 ..< vertex_count { 
+ p , uv , n:[3]f32
+_ = cgltf.accessor_read_float(pos_accessor , uint(i) , &p[0] , 3)
+ if uv_accessor != nil { 
+ _ = cgltf.accessor_read_float(uv_accessor, uint(i), &uv[0], 2)
+		}
+		if normal_accessor != nil {
+			_ = cgltf.accessor_read_float(normal_accessor, uint(i), &n[0], 3)
+		}
+ base := i * 8   //making the 8 vertices 
+vertices[base + 0] = p[0]; vertices[base +1] = p[1] ; vertices[base +2] = p[2]
+vertices[base + 3] = uv[0]; vertices[base + 4] = uv[1]
+vertices[base + 5] = n[0]; vertices[base + 6] = n[1]; vertices[base + 7] = n[2]
+}
+// the index counting 
+index_count := int(prim.indices.count) 
+indices := make([]u32 , index_count) 
+for i in 0 ..<index_count { 
+indices[i] = u32(cgltf.accessor_read_index(prim.indices , uint(i)))
+}
+vbo, ibo, vao: u32
+	gl.CreateBuffers(1, &vbo)
+	gl.NamedBufferStorage(vbo, len(vertices) * size_of(f32), raw_data(vertices), 0)
+	gl.CreateBuffers(1, &ibo)
+	gl.NamedBufferStorage(ibo, len(indices) * size_of(u32), raw_data(indices), 0)
+	gl.CreateVertexArrays(1, &vao)
+	gl.VertexArrayElementBuffer(vao, ibo)
+	// FIX: Use standard vertex attributes to prevent driver-side index buffer failures
+	stride := i32(8 * size_of(f32))
+	gl.VertexArrayVertexBuffer(vao, 0, vbo, 0, stride)
+
+	gl.EnableVertexArrayAttrib(vao, 0) // Position
+	gl.VertexArrayAttribFormat(vao, 0, 3, gl.FLOAT, false, 0)
+	gl.VertexArrayAttribBinding(vao, 0, 0)
+
+	gl.EnableVertexArrayAttrib(vao, 1) // UV
+	gl.VertexArrayAttribFormat(vao, 1, 2, gl.FLOAT, false, 3 * size_of(f32))
+	gl.VertexArrayAttribBinding(vao, 1, 0)
+
+	gl.EnableVertexArrayAttrib(vao, 2) // Normal
+	gl.VertexArrayAttribFormat(vao, 2, 3, gl.FLOAT, false, 5 * size_of(f32))
+	gl.VertexArrayAttribBinding(vao, 2, 0)
+
+	//  basic loading of the duck texture - but important function call here, we have done similar things before 
+	stbi.set_flip_vertically_on_load(1) // 1 = true, this proc wants a plain C-style int, not an Odin bool
+	tw, th, tc: i32
+	px := stbi.load(DUCK_TEXTURE_PATH, &tw, &th, &tc, 4)
+	if px == nil {
+		fmt.println("failed to load duck texture, ")
+		return
+	}
+	defer stbi.image_free(px)
+
+duck_tex : u32 
+gl.CreateTextures(gl.TEXTURE_2D , 1 , &duck_tex)
+gl.TextureParameteri(duck_tex , gl.TEXTURE_MIN_FILTER , gl.LINEAR_MIPMAP_LINEAR)
+gl.TextureParameteri(duck_tex , gl.TEXTURE_MAG_FILTER , gl.LINEAR)
+mip_levels := i32( 1+ math.floor(math.log2(f32(max(tw, th)))))
+gl.TextureStorage2D(duck_tex, mip_levels, gl.RGBA8, tw, th)
+gl.TextureSubImage2D(duck_tex, 0, 0, 0, tw, th, gl.RGBA, gl.UNSIGNED_BYTE, px)
+gl.GenerateTextureMipmap(duck_tex)
+gl.BindTextureUnit(0, duck_tex)
+gl.BindTextureUnit(1, cubemap)
+
+prog_duck := make_program(duck_vertex_src, duck_fragment_src)
+prog_cube := make_program(cube_vertex_src, cube_fragment_src)
+
+ubo: u32
+gl.CreateBuffers(1, &ubo)
+gl.NamedBufferStorage(ubo, size_of(PerFrameData), nil, gl.DYNAMIC_STORAGE_BIT)
+gl.BindBufferBase(gl.UNIFORM_BUFFER, 0, ubo)
+
+gl.Enable(gl.DEPTH_TEST)
+gl.BindVertexArray(vao)
+
+last_frame_time: f32 
+for !glfw.WindowShouldClose(window) {
+width, height := glfw.GetFramebufferSize(window)
+gl.Viewport(0, 0, width, height)
+gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+//timeing so the camera movement does not effect the framerate much 
+current_time := f32(glfw.GetTime())
+delta_time := current_time - last_frame_time
+last_frame_time = current_time
+
+//the wasd camera movement - which in fact does not work for some reason , so problem solve it yourself , i have been writing this code for past 5 days and i am in no mood 
+move_speed := 2.5 * delta_time // units per frame; raise 2.5 for a faster camera
+camera_right := linalg.normalize(linalg.cross(camera_front, camera_up))
+if glfw.GetKey(window, glfw.KEY_W) == glfw.PRESS { camera_pos += camera_front * move_speed }
+if glfw.GetKey(window, glfw.KEY_S) == glfw.PRESS { camera_pos -= camera_front * move_speed }
+if glfw.GetKey(window, glfw.KEY_A) == glfw.PRESS { camera_pos -= camera_right * move_speed }
+if glfw.GetKey(window, glfw.KEY_D) == glfw.PRESS { camera_pos += camera_right * move_speed }
+
+//now making a cool thing  building the camera view matrix , looks_at builds a matrix that repositions / rerotates the whole world as if the camera were standing at camera_pos looking towards camer_pos + camera_front 
+view := linalg.matrix4_look_at_f32(camera_pos, camera_pos + camera_front, camera_up)
+
+//the skybox needs a version of this movement removed(just rotaton) , otherwise walking forward will make u catch up to the sky instead of staying infinetly far away 
+sky_view := linalg.matrix4_look_at_f32([3]f32{0, 0, 3}, camera_front, camera_up)
+
+aspect := f32(width) / f32(height)
+p := linalg.matrix4_perspective_f32(linalg.to_radians(f32(45.0)), aspect, 0.1, 1000.0)
+m0 := linalg.matrix4_scale_f32([3]f32{0.01, 0.01, 0.01})
+m1 := linalg.matrix4_rotate_f32(linalg.to_radians(f32(-90.0)), {1, 0, 0})
+m2 := linalg.matrix4_rotate_f32(f32(glfw.GetTime()), {0, 1, 0})
+model := m2 * m1 * m0
+
+cam4 := [4]f32{camera_pos.x, camera_pos.y, camera_pos.z, 1}
+
+// drawing the duck 
+duck_frame := PerFrameData{model = model, mvp = p * view * model, camera_pos = cam4}
+gl.NamedBufferSubData(ubo, 0, size_of(duck_frame), &duck_frame)
+gl.UseProgram(prog_duck)
+gl.DrawElements(gl.TRIANGLES, i32(len(indices)), gl.UNSIGNED_INT, nil)
+
+// drawing the skybox
+sky_frame := PerFrameData{model = linalg.MATRIX4F32_IDENTITY, mvp = p * sky_view, camera_pos = cam4}
+gl.NamedBufferSubData(ubo, 0, size_of(sky_frame), &sky_frame)
+gl.UseProgram(prog_cube)
+gl.DrawArrays(gl.TRIANGLES, 0, 36)
+glfw.SwapBuffers(window)
+glfw.PollEvents()
+	}
+}
