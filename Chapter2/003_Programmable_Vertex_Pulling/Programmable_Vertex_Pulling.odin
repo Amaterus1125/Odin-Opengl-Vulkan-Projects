@@ -241,6 +241,15 @@ gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)
 gl.TextureSubImage2D(tex, 0, 0, 0, w, h, gl.RGB, gl.UNSIGNED_BYTE, img)
 gl.BindTextures(0, 1, &tex)
 
+// SHADERS reusing the create_shader/create_program wrappers from 007 project in chapter 1 , creating them and destroying them after jsut creating, 
+shader_vertex := create_shader(gl.VERTEX_SHADER, vertex_src)
+defer destroy_shader(&shader_vertex)
+shader_fragment := create_shader(gl.FRAGMENT_SHADER, fragment_src)
+defer destroy_shader(&shader_fragment)
+program := create_program(shader_vertex, shader_fragment)
+defer destroy_program(&program)
 
-
-
+per_frame_buf: u32 
+gl.CreateBuffers(1 , &per_frame_buf) 
+gl.NamedBufferStorage(per_frame_buf , size_of(PerFrameData) , nil , gl.DYNAMIC_STORAGE_BIT) 
+gl.BindBufferBase(gl.UNIFORM_BUFFER , 0 , per_frame_buf) 
