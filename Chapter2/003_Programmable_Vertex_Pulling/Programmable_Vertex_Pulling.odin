@@ -63,6 +63,10 @@ void main() {
   out_FragColor = texture(texture0 , uv);
 }`
 
+/* writing the shader wrappers (same ones from 007_SHADER_LOADER.odin, copied in here so this file runs standalone with `odin run ... -file`. If you're
+running these as a folder instead with `odin run .`, you can delete this block and just keep the imports -- Odin will use the versions
+from 007_SHADER_LOADER.odin automatically since they're in the same package) */
+
 Shader :: struct { 
 type: u32,
 handle : u32,
