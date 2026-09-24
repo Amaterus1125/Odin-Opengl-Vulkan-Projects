@@ -55,6 +55,14 @@ gl_position = MVP * vec4(pos, 1.0) ;
 uv = getTexCoord(gl_VertexID) ;
 }`
 
+fragment_src := `#version 460 core 
+layout(location =0) in vec2 uv;
+layout(location =0) out vec4 out_FragColor;
+layout(location =0) uniform sampler2D texture0;
+void main() { 
+  out_FragColor = texture(texture0 , uv);
+}`
+
 
 
 
