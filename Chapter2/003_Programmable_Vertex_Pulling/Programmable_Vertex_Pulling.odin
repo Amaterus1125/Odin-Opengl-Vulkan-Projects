@@ -30,6 +30,29 @@ VertexData:struct {
  tc : [3]f32,
 }
 
+
+//  CAMERA STATE (added so you can fly around instead of being stuck staring from inside the duck)
+camera_pos:   [3]f32 = {0, 0, 5}
+camera_front: [3]f32 = {0, 0, -1}
+camera_up:    [3]f32 = {0, 1, 0}
+camera_speed: f32 = 3.0
+last_frame_time: f32 = 0
+
+update_camera :: proc(window: glfw.WindowHandle, dt: f32) {
+	move := camera_speed * dt
+	right := linalg.normalize(linalg.cross(camera_front, camera_up))
+
+	if glfw.GetKey(window, glfw.KEY_W) == glfw.PRESS { camera_pos += camera_front * move }
+	if glfw.GetKey(window, glfw.KEY_S) == glfw.PRESS { camera_pos -= camera_front * move }
+	if glfw.GetKey(window, glfw.KEY_A) == glfw.PRESS { camera_pos -= right * move }
+	if glfw.GetKey(window, glfw.KEY_D) == glfw.PRESS { camera_pos += right * move }
+	if glfw.GetKey(window, glfw.KEY_SPACE) == glfw.PRESS { camera_pos += camera_up * move }
+	if glfw.GetKey(window, glfw.KEY_LEFT_SHIFT) == glfw.PRESS { camera_pos -= camera_up * move }
+}
+
+
+
+
 vertex_src := `#version 460 core 
 layout(std140 , binding = 0) uniform PerFramData { 
  uniform mat4 MVP;
@@ -120,6 +143,21 @@ gl.UseProgram(p.handle)
 } 
 
 main :: proc() { 
+glfw.Init()
+	defer glfw.Terminate()
+
+	glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 4)
+	glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 6)
+	glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
+
+	window := glfw.CreateWindow(800, 600, "THE ODIN EYE", nil, nil)
+	glfw.MakeContextCurrent(window)
+	gl.load_up_to(4, 6, glfw.gl_set_proc_address)
+	gl.Enable(gl.DEPTH_TEST)
+
+// EDIT THESE 2 PATHS to point at your own duck model files
+	DUCK_GLTF_PATH :: "rubber_duck/scene.gltf"
+	DUCK_TEXTURE_PATH :: "rubber_duck/DuckCM.png"
 
 
 
