@@ -253,3 +253,39 @@ per_frame_buf: u32
 gl.CreateBuffers(1 , &per_frame_buf) 
 gl.NamedBufferStorage(per_frame_buf , size_of(PerFrameData) , nil , gl.DYNAMIC_STORAGE_BIT) 
 gl.BindBufferBase(gl.UNIFORM_BUFFER , 0 , per_frame_buf) 
+
+per_frame_buf: u32
+	gl.CreateBuffers(1, &per_frame_buf)
+	gl.NamedBufferStorage(per_frame_buf, size_of(PerFrameData), nil, gl.DYNAMIC_STORAGE_BIT)
+	gl.BindBufferBase(gl.UNIFORM_BUFFER, 0, per_frame_buf)
+
+
+// writing the window openeinng part and the camera part too 
+for !glfw.WindowShouldClose(window) {
+width, height := glfw.GetFramebufferSize(window)
+gl.Viewport(0, 0, width, height)
+gl.ClearColor(1.0, 1.0, 1.0, 1.0)
+gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+aspect := f32(width) / f32(height)
+p := linalg.matrix4_perspective_f32(linalg.to_radians(f32(45.0)), aspect, 0.1, 1000.0)
+
+current_time := f32(glfw.GetTime())
+dt := current_time - last_frame_time
+last_frame_time = current_time
+update_camera(window, dt)
+
+view := linalg.matrix4_look_at_f32(camera_pos, camera_pos + camera_front, camera_up)
+rotate := linalg.matrix4_rotate_f32(f32(glfw.GetTime()), {0, 1, 0})
+mvp := p * view * rotate
+
+frame_data := PerFrameData{mvp = mvp}
+gl.NamedBufferSubData(per_frame_buf, 0, size_of(PerFrameData), &frame_data)
+
+use_program(&program)
+gl.DrawElements(gl.TRIANGLES, i32(len(indices)), gl.UNSIGNED_INT, nil)
+
+glfw.SwapBuffers(window)
+glfw.PollEvents()
+	}
+}
