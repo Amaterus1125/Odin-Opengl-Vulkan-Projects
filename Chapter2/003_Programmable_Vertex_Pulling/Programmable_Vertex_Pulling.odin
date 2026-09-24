@@ -25,14 +25,14 @@ PerFrameData :: struct {
 }
 
 // this has to exactly match the shader's "Vertex" struct below, including using separate floats instead of a vec3
-VertexData:struct { 
+VertexData :: struct { 
  pos:[3]f32,
- tc : [3]f32,
+ tc : [2]f32,
 }
 
 
 //  CAMERA STATE (added so you can fly around instead of being stuck staring from inside the duck)
-camera_pos:   [3]f32 = {0, 0, 5}
+camera_pos:   [3]f32 = {0, 0, 300}
 camera_front: [3]f32 = {0, 0, -1}
 camera_up:    [3]f32 = {0, 1, 0}
 camera_speed: f32 = 3.0
@@ -70,18 +70,18 @@ layout(std430, binding = 1) readonly buffer Vertices { Vertex in_Vertices[]; };
 vec3 getPosition(int i) { return vec3(in_Vertices[i].p[0], in_Vertices[i].p[1], in_Vertices[i].p[2]); }
 vec2 getTexCoord(int i) { return vec2(in_Vertices[i].tc[0], in_Vertices[i].tc[1]); }
 
-layout (loaction =0) out vec2 uv;
+layout (location =0) out vec2 uv;
 void main() { 
 // gl_VertexID normally just counts 0 ,1,2,3 but since our VAO has an index buffer attached , opengl automatically feels gl_VertexID the actual index values insread , so this naturally puls the right vertex , reused across shared corners , same as normal indexed rendering would 
 vec3 pos = getPosition(gl_VertexID);
-gl_position = MVP * vec4(pos, 1.0) ;
+gl_Position = MVP * vec4(pos, 1.0) ;
 uv = getTexCoord(gl_VertexID) ;
 }`
 
 fragment_src := `#version 460 core 
 layout(location =0) in vec2 uv;
 layout(location =0) out vec4 out_FragColor;
-layout(location =0) uniform sampler2D texture0;
+layout(binding =0) uniform sampler2D texture0;
 void main() { 
   out_FragColor = texture(texture0 , uv);
 }`
@@ -198,9 +198,9 @@ vertices[i] = VertexData{pos = { p.x , p.z , p.y} , tc = { uv.x , uv.y} }
 }
 
 index_count := int(prim.indices.count)
-indices := male([]u32 , index_count) 
+indices := make([]u32 , index_count) 
 for i in 0 ..< index_count { 
- indices[i] = u32(cgltf.acessor_read_index(prim.indices , uint(i)))
+ indices[i] = u32(cgltf.accessor_read_index(prim.indices , uint(i)))
 }
 
 //upload both the buffers 
@@ -253,11 +253,6 @@ per_frame_buf: u32
 gl.CreateBuffers(1 , &per_frame_buf) 
 gl.NamedBufferStorage(per_frame_buf , size_of(PerFrameData) , nil , gl.DYNAMIC_STORAGE_BIT) 
 gl.BindBufferBase(gl.UNIFORM_BUFFER , 0 , per_frame_buf) 
-
-per_frame_buf: u32
-	gl.CreateBuffers(1, &per_frame_buf)
-	gl.NamedBufferStorage(per_frame_buf, size_of(PerFrameData), nil, gl.DYNAMIC_STORAGE_BIT)
-	gl.BindBufferBase(gl.UNIFORM_BUFFER, 0, per_frame_buf)
 
 
 // writing the window openeinng part and the camera part too 
