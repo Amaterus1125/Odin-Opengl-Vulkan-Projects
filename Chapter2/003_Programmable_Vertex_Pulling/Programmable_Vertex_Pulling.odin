@@ -204,9 +204,42 @@ for i in 0 ..< index_count {
 }
 
 //upload both the buffers 
+data_indices: u32
+	gl.CreateBuffers(1, &data_indices)
+	gl.NamedBufferStorage(data_indices, len(indices) * size_of(u32), raw_data(indices), 0)
 
+	data_vertices: u32
+	gl.CreateBuffers(1, &data_vertices)
+	gl.NamedBufferStorage(data_vertices, len(vertices) * size_of(VertexData), raw_data(vertices), 0)
 
+//the VAO only knows about the index buffer , there are no vertex attributes set up at all , since the shader is pulling vertex data manually instead 
 
+vao: u32
+gl.CreateVertexArrays(1, &vao)
+gl.BindVertexArray(vao)
+gl.VertexArrayElementBuffer(vao, data_indices)
+// bind our raw vertex buffer to binding point 1, matching the shader's "layout(std430, binding = 1)" declaration
+gl.BindBufferBase(gl.SHADER_STORAGE_BUFFER, 1, data_vertices)
+
+// loading the texture  
+
+w, h, comp: i32
+img := stbi.load(DUCK_TEXTURE_PATH, &w, &h, &comp, 3)
+if img == nil {
+fmt.println("failed to load duck texture : sed")
+return
+}
+defer stbi.image_free(img)
+
+//texture is 2D- mostly DuckCM.png
+tex: u32
+gl.CreateTextures(gl.TEXTURE_2D, 1, &tex)
+gl.TextureParameteri(tex, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+gl.TextureParameteri(tex, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+gl.TextureStorage2D(tex, 1, gl.RGB8, w, h)
+gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)
+gl.TextureSubImage2D(tex, 0, 0, 0, w, h, gl.RGB, gl.UNSIGNED_BYTE, img)
+gl.BindTextures(0, 1, &tex)
 
 
 
