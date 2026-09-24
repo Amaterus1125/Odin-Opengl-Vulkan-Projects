@@ -24,4 +24,41 @@ PerFrameData :: struct {
  mvp : matrix[4,4]f32,
 }
 
+// this has to exactly match the shader's "Vertex" struct below, including using separate floats instead of a vec3
+VertexData:struct { 
+ pos:[3]f32,
+ tc : [3]f32,
+}
+
+vertex_src := `#version 460 core 
+layout(std140 , binding = 0) uniform PerFramData { 
+ uniform mat4 MVP;
+};
+
+/* this struct layout must match the VertexData on the odin side exactly , we use float[3] / float[2] instead of vec3/ vec2 here on purpose,as GLSL silently pads a vec3 to take up same space as a vec4 (16 bytes) instead a buffer like this ,
+which would make our odin struct and the shader struct diagree about where each vertex data actually start, plain floats have no such padding , so both sides agree */
+
+struct Vertex { float p[3] ; float tc[2]; };
+
+//binding = 1 here is our raw vertex data buffer, readonly just means that the shader can only read from it and never write back to it 
+
+layout(std430, binding = 1) readonly buffer Vertices { Vertex in_Vertices[]; };
+
+vec3 getPosition(int i) { return vec3(in_Vertices[i].p[0], in_Vertices[i].p[1], in_Vertices[i].p[2]); }
+vec2 getTexCoord(int i) { return vec2(in_Vertices[i].tc[0], in_Vertices[i].tc[1]); }
+
+layout (loaction =0) out vec2 uv;
+void main() { 
+// gl_VertexID normally just counts 0 ,1,2,3 but since our VAO has an index buffer attached , opengl automatically feels gl_VertexID the actual index values insread , so this naturally puls the right vertex , reused across shared corners , same as normal indexed rendering would 
+vec3 pos = getPosition(gl_VertexID);
+gl_position = MVP * vec4(pos, 1.0) ;
+uv = getTexCoord(gl_VertexID) ;
+}`
+
+
+
+
+
+
+
 
