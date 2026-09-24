@@ -156,8 +156,8 @@ glfw.Init()
 	gl.Enable(gl.DEPTH_TEST)
 
 // EDIT THESE 2 PATHS to point at your own duck model files
-	DUCK_GLTF_PATH :: "rubber_duck/scene.gltf"
-	DUCK_TEXTURE_PATH :: "rubber_duck/DuckCM.png"
+	DUCK_GLTF_PATH :: "Assets/scene.gltf"
+	DUCK_TEXTURE_PATH :: "Assets/DuckCM.png"
 
 //loading the model 
 options: cgltf.options
