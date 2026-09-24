@@ -184,6 +184,27 @@ case .texcoord: uv_accessor = attr.data
 }
 }
 
+//build our array of VertexData, one entry per vertex -- matches the vertices.push_back({pos , tc}) loop 
+vertex_count := int(pos_accessor.count)
+vertices := make([]VertexData , vertex_count) 
+for i in 0 ..< vertex_count { 
+ p , uv: [3]f32 
+ _ = cgltf.accessor_read_float(pos_accessor , uint(i) , &p[0] , 3)
+ if uv_accessor != nil { 
+ _ = cgltf.accessor_read_float(uv_accessor , uint(i) , &uv[0] , 2)
+} 
+// y and z are swapped here and same as our earlier duck examples , gltf and this engine does not agree on which axis is "up" so we flip them to orient the model correctly 
+vertices[i] = VertexData{pos = { p.x , p.z , p.y} , tc = { uv.x , uv.y} }
+}
+
+index_count := int(prim.indices.count)
+indices := male([]u32 , index_count) 
+for i in 0 ..< index_count { 
+ indices[i] = u32(cgltf.acessor_read_index(prim.indices , uint(i)))
+}
+
+//upload both the buffers 
+
 
 
 
