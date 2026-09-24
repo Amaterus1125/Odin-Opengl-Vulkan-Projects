@@ -159,6 +159,32 @@ glfw.Init()
 	DUCK_GLTF_PATH :: "rubber_duck/scene.gltf"
 	DUCK_TEXTURE_PATH :: "rubber_duck/DuckCM.png"
 
+//loading the model 
+options: cgltf.options
+	data, parse_result := cgltf.parse_file(options, DUCK_GLTF_PATH)
+	if parse_result != .success {
+		fmt.println("failed to parse duck gltf:", parse_result)
+		return
+	}
+	defer cgltf.free(data)
+	load_result := cgltf.load_buffers(options, data, DUCK_GLTF_PATH)
+	if load_result != .success {
+		fmt.println("failed to load duck buffers: sed", load_result)
+		return
+	}
+
+mesh := data.meshes[0]
+prim := mesh.primitives[0] 
+
+pos_accessor , uv_accessor: ^cgltf.accessor
+for attr in prim.attributes {
+#partial switch attr.type { 
+case .position: pos_accessor = attr.data
+case .texcoord: uv_accessor = attr.data
+}
+}
+
+
 
 
 
