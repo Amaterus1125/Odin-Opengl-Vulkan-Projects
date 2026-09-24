@@ -63,7 +63,59 @@ void main() {
   out_FragColor = texture(texture0 , uv);
 }`
 
+Shader :: struct { 
+type: u32,
+handle : u32,
+}
 
+create_shader :: proc(type: u32 , text: string) -> Shader { 
+ handle := gl.CreateShader(type)
+c_text := cstring(raw_data(text)) 
+gl.ShaderSource(handle , 1, &c_text , nil) 
+gl.CompileShader(handle) 
+
+buffer : [8192]u8 
+length : i32 
+gl.GetShaderInfoLog( handle , size_of(buffer) , &length , raw_data(buffer[:])) 
+if length > 0 {
+ fmt.println(string(buffer[:length])) 
+} 
+return Shader{type , handle}
+}
+
+destroy_shader :: proc(s : ^Shader) { 
+ gl.DeleteShader(s.handle) 
+} 
+
+Program :: struct { 
+handle : u32 ,
+} 
+
+create_program :: proc(shaders: ..Shader) -> Program { 
+ handle := gl.CreateProgram() 
+ for s in shaders { 
+ gl.AttachShader(handle , s.handle) 
+}
+gl.LinkProgram(handle) 
+
+buffer: [8192]u8 
+length : i32 
+gl.GetProgramInfoLog(handle , size_of(buffer) , &length , raw_data(buffer[:]))
+if length > 0 {
+ fmt.println(string(buffer[:length])) 
+}
+return Program{handle}
+}
+
+destroy_program :: proc(p: ^Program) { 
+ gl.DeleteProgram(p.handle)
+}
+
+use_program :: proc(p : ^Program) { 
+gl.UseProgram(p.handle) 
+} 
+
+main :: proc() { 
 
 
 
