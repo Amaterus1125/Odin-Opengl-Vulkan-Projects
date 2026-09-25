@@ -38,4 +38,11 @@ if result != .SUCCESS {
 return shader_module
 }
 
+main :: proc() { 
+// glfw is not drawing anything here , we only use it to hand vulkan on how do i find vulkan functions on this system type of thing 
+glfw.Init()
+	defer glfw.Terminate()
+	vk.load_proc_addresses(rawptr(glfw.GetInstanceProcAddress))
+
+
 
