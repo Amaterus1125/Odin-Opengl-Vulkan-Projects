@@ -96,7 +96,18 @@ fmt.println("failed to create logical device")
 return
 }
 defer vk.DestroyDevice(device, nil)
-	vk.load_proc_addresses(device) // load device-specific functions now that we have a device
+vk.load_proc_addresses(device) // load device-specific functions now that we have a device
 
+// STEP 4 - the actual part for loading shaders - basically create them and then destroy them isntantaneously , like we have been doing way before 
+vertex_module := create_shader_module(device, "VK01.vert.spv")
+defer vk.DestroyShaderModule(device, vertex_module, nil)
+
+fragment_module := create_shader_module(device, "VK01.frag.spv")
+defer vk.DestroyShaderModule(device, fragment_module, nil)
+
+if vertex_module != 0 && fragment_module != 0 {
+fmt.println("both shader modules loaded successfully!")
+}
+}
 
 
