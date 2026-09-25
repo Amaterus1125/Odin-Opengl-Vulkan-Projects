@@ -63,5 +63,33 @@ return
 defer vk.DestroyInstance(instance, nil)
 vk.load_proc_addresses(instance) // now that we have an instance, load the rest
 
+//STEP 2 - picking a physical GPU 
+device_count: u32
+vk.EnumeratePhysicalDevices(instance , &device_count , nil)
+if device_count == 0 {
+fmt.println("no vulkan-capable gpu found")
+return
+}
+
+physical_devices := make([]vk.PhysicalDevice , device_count)
+defer delete(physical_devices) 
+vk.EnumeratePhysicalDevices(instance , &device_count , raw_data(physical_devices))
+physical_device := physical_devices[0] //just grab the first gpu found , good enough for this test 
+
+// STEP 3 - create a logical device ( our actual handle for talking to that gpu) 
+queue_priority : f32 = 1.0 
+queue_info := vk.DeviceQueueCreateInfo{
+ sType = .DEVICE_QUEUE_CREATE_INFO, 
+queuwFamilyIndex = 0 ,              // for simplification assuming that queue family 0 supports what we need , fine for this test 
+queueCount = 1 ,
+pQueuePriorities = &queue_info , 
+}
+device_info := vk.DeviceCreateInfo{
+ sType = .DEVICE_CREATE_INFO,
+queueCreateInfoCount = 1 , 
+pQueueCreateInfos = &queue_info , 
+} 
+
+
 
 
