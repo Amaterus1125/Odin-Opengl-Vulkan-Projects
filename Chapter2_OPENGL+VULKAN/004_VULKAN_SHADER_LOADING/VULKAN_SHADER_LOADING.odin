@@ -1,5 +1,16 @@
 // IMPORTANT IMPORT FILES FOR VULKAN AND ODIN 
 
+
+
+/* 
+Compile the 2 shaders into .spv binaries — do this from inside that folder you have put both the fiels in and run this in the terminal (I am using Arch for this):
+glslangValidator -V VK01.vert -o VK01.vert.spv
+glslangValidator -V VK01.frag -o VK01.frag.spv
+
+*/
+
+
+
 package main
 
 import "core:fmt"
