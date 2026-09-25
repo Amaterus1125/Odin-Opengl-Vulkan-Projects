@@ -90,6 +90,13 @@ queueCreateInfoCount = 1 ,
 pQueueCreateInfos = &queue_info , 
 } 
 
+device : vk.Device 
+if vk.CreateDevice(physical_device , &device_info , nil , &device) != .SUCCESS { 
+fmt.println("failed to create logical device")
+return
+}
+defer vk.DestroyDevice(device, nil)
+	vk.load_proc_addresses(device) // load device-specific functions now that we have a device
 
 
 
