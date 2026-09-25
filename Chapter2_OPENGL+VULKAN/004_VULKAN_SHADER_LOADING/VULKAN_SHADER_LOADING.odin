@@ -41,8 +41,27 @@ return shader_module
 main :: proc() { 
 // glfw is not drawing anything here , we only use it to hand vulkan on how do i find vulkan functions on this system type of thing 
 glfw.Init()
-	defer glfw.Terminate()
-	vk.load_proc_addresses(rawptr(glfw.GetInstanceProcAddress))
+defer glfw.Terminate()
+vk.load_proc_addresses(rawptr(glfw.GetInstanceProcAddress))
+
+//STEP 1 - create a VULKAN INSTANCE (the app connection to the driver) 
+
+app_info := vk.ApplicationInfo{
+sType = .APPLICATION_INFO,
+pApplicationName = "vulkan shader test the odin way",
+apiVersion = vk.API_VERSION_1_1,
+}
+instance_info := vk.InstanceCreateInfo { 
+ sType = .INSTANCE_CREATE_INFO,
+ pApplicationInfo = &app_info,
+} 
+instance : vk.Instance 
+if vk.CreateInstance(&instance_info , nil , &instance) != .SUCCESS { 
+fmt.println("failed to create vulkan instance")
+return
+}
+defer vk.DestroyInstance(instance, nil)
+vk.load_proc_addresses(instance) // now that we have an instance, load the rest
 
 
 
