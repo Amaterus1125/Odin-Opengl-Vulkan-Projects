@@ -8,3 +8,4 @@ import vk "vendor:vulkan"
 system, automatically, via glfw.GetRequiredInstanceExtensions(), So no manual OS detection needed at all. One less thing to hand maintain.
 
 // crashes the program with a message if a vulkan call didn't succeed same idea as the book's VK_ASSERT/VK_CHECK macros. Odin doesn't have macros the way C++ does, so this is just a normal proc instead
+vk_check :: proc(result: vk.Result, what: string) {
