@@ -11,3 +11,5 @@ system, automatically, via glfw.GetRequiredInstanceExtensions(), So no manual OS
 vk_check :: proc(result: vk.Result, what: string) {
 if result != .SUCCESS {
 fmt.println("VULKAN ERROR during", what, "-", result)
+panic("vulkan call failed") // panic = odin's version of crashing on purpose with a message
+	}
