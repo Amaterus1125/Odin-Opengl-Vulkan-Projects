@@ -1,4 +1,5 @@
-//SOME BASIC IMPORTS 
+//SOME BASIC IMPORTS for the vulkan instance
+
 package main
 import "core:fmt"
 import "vendor:glfw"
