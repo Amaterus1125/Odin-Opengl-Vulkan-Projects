@@ -45,6 +45,16 @@ engineVersion = vk.MAKE_VERSION(1,0,0)
 apiVersion = vk.API_VERSION_1_1,
 }
 
+create_info := vk.InstanceCreateInfo{
+sType = .INSTANCE_CREATE_INFO ,
+pApplicationInfo = &app_info , 
+enabledLayerCount = u32(len(layers)),
+ppEnabledLayerNames = raw_data(layers),
+enabledExtensionCount = u32(len(extensions)),
+ppEnabledExtensionNames = raw_data(extensions) ,
+}
+
+instance : vk.Instance 
 
 
 
