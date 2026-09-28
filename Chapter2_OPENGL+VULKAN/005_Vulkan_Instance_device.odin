@@ -14,8 +14,6 @@ fmt.println("VULKAN ERROR during", what, "-", result)
 panic("vulkan call failed") // panic = odin's version of crashing on purpose with a message
 	}
 }
-
-
 // PART 1 - NOW CREATING THE VULKAN INSTANCE DEVICE 
 /* the instance os our program's actual connection to vulkan itself, nothing gpu specific happnes yet, this is just telling vulkan that we exist */
 create_instance :: proc() -> vk.Instance { 
