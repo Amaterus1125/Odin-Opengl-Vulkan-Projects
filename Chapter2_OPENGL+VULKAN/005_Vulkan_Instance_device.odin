@@ -25,7 +25,7 @@ and it is very useful while learning and normally turned odd in a shipped game f
 
 layers := cstring{"VK_LAYER_KHRONOS_validation"}
 
-/*now asking glfw which extensions this system needs to be able to show vulkan output in window at all, easier way and way better than per-os extension list entirely 
+/*now asking glfw which extensions this system needs to be able to show vulkan output in window at all, easier way and way better than per-os extension list entirely */
 glfw_extensions := glfw.GetRequiredInstanceExtensions() 
 
 //now on top of glfw list , we add 2 extensions for the valaidation layer's debug output to actually reach us 
