@@ -17,3 +17,12 @@ panic("vulkan call failed") // panic = odin's version of crashing on purpose wit
 
 
 // PART 1 - NOW CREATING THE VULKAN INSTANCE DEVICE 
+/* the instance os our program's actual connection to vulkan itself, nothing gpu specific happnes yet, this is just telling vulkan that we exist */
+create_instance :: proc() -> vk.Instance { 
+
+/*validation layers are vulkan built in mistake checkers, they catch things like if we forgot to onitialize something or if we are using object in the wrong state and prints a clear error instead of our program crashing or rendering garbage 
+and it is very useful while learning and normally turned odd in a shipped game for extra performance */
+
+layers := cstring{"VK_LAYER_KHRONOS_validation"}
+
+/*
