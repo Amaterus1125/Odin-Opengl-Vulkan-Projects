@@ -55,6 +55,15 @@ ppEnabledExtensionNames = raw_data(extensions) ,
 }
 
 instance : vk.Instance 
+result := vk.CreateInstance(&create_info , nil , &instance)
+vk_check(result , "CREATING AN INSTANCE")
+
+/* now that the instance exists, load every other vulkan function through it, just using odin own vendor:vulkan */
+vk.load_proc_addresses(instance) 
+return instance 
+}
+
+//PART -2 FINDING THE GPU TO USE 
 
 
 
