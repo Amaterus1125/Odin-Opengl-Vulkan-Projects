@@ -36,4 +36,15 @@ append(&extensions , ..glfw_extensions)
 append(&extensions , vk.EXT_DEBUG_UTILS_EXTENSION_NAME) 
 append(&extensions , vk.EXT_DEBUG_REPORT_EXTENSION_NAME) 
 
+app_info := vk.ApplicationInfo{
+ sType   = .APPLICATION_INFO,
+pApplicationName = "VULKAN",
+applicationVersion = vk.MAKE_VERSION(1,0,0),
+pEngineName = "No Engine",
+engineVersion = vk.MAKE_VERSION(1,0,0) 
+apiVersion = vk.API_VERSION_1_1,
+}
+
+
+
 
