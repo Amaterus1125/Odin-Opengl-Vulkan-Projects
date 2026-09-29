@@ -1,6 +1,6 @@
 # ⚡ Odin-Opengl-Vulkan-Projects
 
-> just some OpenGL and Vulkan projects in Odin — learning graphics programming
+> just some OpenGL and Vulkan projects in Odin and learning graphics programming
 > from the ground up, one project at a time.
 
 ```
