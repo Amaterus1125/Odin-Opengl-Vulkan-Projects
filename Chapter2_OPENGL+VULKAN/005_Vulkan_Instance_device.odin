@@ -90,6 +90,14 @@ for family , i in families {
 return 0 
 } 
 
+// PART 3 - CREATING THE LOGICAL DEVICCE  
+/* the physical device is just a description of a gpu that exists , the logical device is our actual usbale handle for talking to it , this si the object we will have to pass to almost every other vulkan func from here on */
+
+create-device :: proc ( 
+physical_device : vk.PhysicalDevice .
+device_features : vk.PhysicalDeviceFeatures ,
+graphics_family : u32 , ) -> (vk.Device , vk.Result) { 
+//our device needs to support presenting images to a window that capability comes from this one extension 
 
 
 
