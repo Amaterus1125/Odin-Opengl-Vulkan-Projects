@@ -108,5 +108,19 @@ extensions := []cstring{vk.KHR_SWAPCHAIN_EXTENSION_NAME}
 		pQueuePriorities = &queue_priority,
 	}
 
+features_local := device_features // parameters can't be addressed directly in Odin, so copy it into a local var first
 
+	create_info := vk.DeviceCreateInfo{
+		sType                   = .DEVICE_CREATE_INFO,
+		queueCreateInfoCount    = 1,
+		pQueueCreateInfos       = &queue_info,
+		enabledExtensionCount   = u32(len(extensions)),
+		ppEnabledExtensionNames = raw_data(extensions),
+		pEnabledFeatures        = &features_local,
+	}
+
+	device: vk.Device
+	result := vk.CreateDevice(physical_device, &create_info, nil, &device)
+	return device, result
+}
 
