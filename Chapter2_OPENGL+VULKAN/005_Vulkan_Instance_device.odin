@@ -98,6 +98,15 @@ physical_device : vk.PhysicalDevice .
 device_features : vk.PhysicalDeviceFeatures ,
 graphics_family : u32 , ) -> (vk.Device , vk.Result) { 
 //our device needs to support presenting images to a window that capability comes from this one extension 
+extensions := []cstring{vk.KHR_SWAPCHAIN_EXTENSION_NAME}
+
+	queue_priority: f32 = 1.0
+	queue_info := vk.DeviceQueueCreateInfo{
+		sType            = .DEVICE_QUEUE_CREATE_INFO,
+		queueFamilyIndex = graphics_family,
+		queueCount       = 1,
+		pQueuePriorities = &queue_priority,
+	}
 
 
 
