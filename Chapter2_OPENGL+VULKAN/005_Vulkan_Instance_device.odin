@@ -124,3 +124,42 @@ features_local := device_features // parameters can't be addressed directly in O
 	return device, result
 }
 
+
+// PART 4 - CREATING THE WINDOW 
+
+
+main :: proc() {
+	glfw.Init()
+	defer glfw.Terminate()
+	glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API) // tells glfw "don't set up opengl, we're using vulkan instead"
+	vk.load_proc_addresses(rawptr(glfw.GetInstanceProcAddress))
+
+	instance := create_instance()
+	defer vk.DestroyInstance(instance, nil)
+
+	// our "selector" here just accepts the first gpu that has a graphics queue family at all good enough for a learning demo. a real game might prefer a discrete gpu over an integrated one here instead
+	physical_device, found := find_suitable_physical_device(instance, proc(device: vk.PhysicalDevice) -> bool {
+		family_count: u32
+		vk.GetPhysicalDeviceQueueFamilyProperties(device, &family_count, nil)
+		return family_count > 0
+	})
+if !found {
+		fmt.println("no suitable GRPAHICS PUTTER U (GPU) found")
+		return
+	}
+
+props: vk.PhysicalDeviceProperties
+vk.GetPhysicalDeviceProperties(physical_device, &props)
+fmt.println("using gpu:", cstring(&props.deviceName[0]))
+
+graphics_family := find_queue_families(physical_device, {.GRAPHICS})
+
+device_features: vk.PhysicalDeviceFeatures
+device, result := create_device(physical_device, device_features, graphics_family)
+vk_check(result, "creating logical device")
+defer vk.DestroyDevice(device, nil)
+vk.load_proc_addresses(device)
+fmt.println("vulkan instance + device created successfully finally after 150+ lines of code")
+
+}
+
