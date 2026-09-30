@@ -63,6 +63,18 @@ return instance
 }
 
 //PART -2 FINDING THE GPU TO USE 
+/* walks through every gpu in the system and returns the first one that makes selector return true , selector is a function which we provide by decribing abt what we are looking for */
+find_suitable_physical_device :: proc( instance : vk.instance , selector : proc(device: vk.PhysicalDevice) -> bool , } -> (vk.PhysicalDevice , bool) {
+device_count : u32
+vk.EnumeratePhysicalDevies(instance , &device_count , raw_data(devices)) 
+
+for device in devices { 
+if selector(device) { 
+return device , true 
+} } 
+return {} , false 
+} 
+
 
 
 
