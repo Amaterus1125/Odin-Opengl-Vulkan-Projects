@@ -118,4 +118,17 @@ formats : []vk.SurfaceFormatKHR ,
 present_modes : []vk.PresentModelKHR, 
 } 
 // ask the gpu + surface combo - what are u actually capable of here , different gpu/drivers/operating systems support different image formats and presentaion styles , so we have to check rather than asume
+query_swapchain_support :: proc(device: vk.PhysicalDevice , surface: vk.SurfaceKHR) 
+details : SwapchainSupportDetails 
+vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(device , surface , &details.capabilities) 
+
+format_count : u32 
+vk.GetPhysicalDeviceSurfaceFormatsKHR(device , surface , &format_count , nil) 
+if format_count > 0 { 
+details.formats = make([]vk.SurfaceFormatKHR , format_count) 
+vk.GetPhysicalDeviceSurfaceFormatsKHR( device , surface , &present_mode_count, raw_data(details.present_modes) )
+} 
+return details 
+} 
+
 
