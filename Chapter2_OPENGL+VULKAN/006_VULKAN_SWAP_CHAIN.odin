@@ -49,3 +49,23 @@ return instance
 }
 
 
+find_suitable_physical_device :: proc(
+	instance: vk.Instance,
+	selector: proc(device: vk.PhysicalDevice) -> bool,
+) -> (vk.PhysicalDevice, bool) {
+	device_count: u32
+	vk.EnumeratePhysicalDevices(instance, &device_count, nil)
+	if device_count == 0 {
+		return {}, false
+	}
+	devices := make([]vk.PhysicalDevice, device_count)
+	defer delete(devices)
+	vk.EnumeratePhysicalDevices(instance, &device_count, raw_data(devices))
+	for device in devices {
+		if selector(device) {
+			return device, true
+		}
+	}
+	return {}, false
+}
+
