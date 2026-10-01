@@ -109,3 +109,12 @@ device: vk.Device
 result := vk.CreateDevice(physical_device, &create_info, nil, &device)
 return device, result
 }
+
+//PART 2 - THE SWAP CHAIN ITSELF - a swap chain is a small queue of images that get rendered into offscreen , one at a time , then shown on screen when ready, vulkan does not have a single swap buffers function like opengl does , so we have to explicitly ask for and manage these images ourselves 
+
+SwapchainSupportDetails :: struct { 
+capabilities : vk.SurfaceCapabilitiesKHR . 
+formats : []vk.SurfaceFormatKHR , 
+present_modes : []vk.PresentModelKHR, 
+} 
+
