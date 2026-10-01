@@ -82,3 +82,17 @@ return u32(i)
 }
 return 0
 }
+
+create_device :: proc(
+physical_device: vk.PhysicalDevice,
+device_features: vk.PhysicalDeviceFeatures,
+graphics_family: u32,
+) -> (vk.Device, vk.Result) {
+extensions := []cstring{vk.KHR_SWAPCHAIN_EXTENSION_NAME}
+queue_priority: f32 = 1.0
+queue_info := vk.DeviceQueueCreateInfo{
+sType  = .DEVICE_QUEUE_CREATE_INFO,
+queueFamilyIndex = graphics_family,
+queueCount = 1,
+pQueuePriorities = &queue_priority,
+	}
