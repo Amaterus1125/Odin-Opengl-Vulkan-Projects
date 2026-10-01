@@ -15,3 +15,12 @@ vk_check :: proc(result: vk.Result, what: string) {
 
 
 // PART 1 - INSTANCE  DEVICE (same as previous recipe and file , you can just copy the 005 file here
+create_instance :: proc() -> vk.Instance {
+	layers := []cstring{"VK_LAYER_KHRONOS_validation"}
+	glfw_extensions := glfw.GetRequiredInstanceExtensions()
+
+	extensions := make([dynamic]cstring)
+	defer delete(extensions)
+	append(&extensions, ..glfw_extensions)
+	append(&extensions, vk.EXT_DEBUG_UTILS_EXTENSION_NAME)
+	append(&extensions, vk.EXT_DEBUG_REPORT_EXTENSION_NAME)
