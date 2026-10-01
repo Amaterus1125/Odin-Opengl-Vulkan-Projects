@@ -117,4 +117,5 @@ capabilities : vk.SurfaceCapabilitiesKHR .
 formats : []vk.SurfaceFormatKHR , 
 present_modes : []vk.PresentModelKHR, 
 } 
+// ask the gpu + surface combo - what are u actually capable of here , different gpu/drivers/operating systems support different image formats and presentaion styles , so we have to check rather than asume
 
