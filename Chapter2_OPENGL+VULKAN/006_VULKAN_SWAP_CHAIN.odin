@@ -69,3 +69,16 @@ find_suitable_physical_device :: proc(
 	return {}, false
 }
 
+find_queue_families :: proc(device: vk.PhysicalDevice, desired_flags: vk.QueueFlags) -> u32 {
+family_count: u32
+vk.GetPhysicalDeviceQueueFamilyProperties(device, &family_count, nil)
+families := make([]vk.QueueFamilyProperties, family_count)
+defer delete(families)
+vk.GetPhysicalDeviceQueueFamilyProperties(device, &family_count, raw_data(families))
+for family, i in families {
+if family.queueCount > 0 && (family.queueFlags & desired_flags == desired_flags) {
+return u32(i)
+}
+}
+return 0
+}
