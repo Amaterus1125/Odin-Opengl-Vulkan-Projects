@@ -41,3 +41,11 @@ ppEnabledLayerNames     = raw_data(layers),
 enabledExtensionCount   = u32(len(extensions)),
 ppEnabledExtensionNames = raw_data(extensions),
 }
+
+instance: vk.Instance
+vk_check(vk.CreateInstance(&create_info, nil, &instance), "creating instance")
+vk.load_proc_addresses(instance)
+return instance
+}
+
+
