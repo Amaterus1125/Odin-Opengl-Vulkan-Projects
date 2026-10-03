@@ -221,3 +221,24 @@ view: vk.ImageView
 result := vk.CreateImageView(device, &view_info, nil, &view)
 return view, result == .SUCCESS
 }
+
+//pulls the actual images out of a swapchain we already created and builds view for each one 
+create_swapchain_images :: proc(device: vk.Device, swapchain: vk.SwapchainKHR) -> (images: []vk.Image, views: []vk.ImageView) {
+image_count: u32
+vk.GetSwapchainImagesKHR(device, swapchain, &image_count, nil)
+
+images = make([]vk.Image, image_count)
+views = make([]vk.ImageView, image_count)
+vk.GetSwapchainImagesKHR(device, swapchain, &image_count, raw_data(images))
+
+for i in 0 ..< image_count {
+view, ok := create_image_view(device, images[i], .B8G8R8A8_UNORM, {.COLOR})
+	if !ok {
+fmt.println("failed to create image view for swapchain image", i)
+return
+}
+views[i] = view
+}
+return
+}
+
