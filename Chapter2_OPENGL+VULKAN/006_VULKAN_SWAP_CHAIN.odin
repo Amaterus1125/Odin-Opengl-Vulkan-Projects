@@ -197,3 +197,10 @@ presentMode = present_mode,
 clipped = true , //lets vulkan skip rendering pixels that are covered by another window on top of ours
 oldSwapchain     = {},
 }
+swapchain : vk.SwapchainKHR 
+result := CreateSwapchainKHR(device , &create_info , nil, &swapchain)
+return swapchain, result 
+} 
+
+// an image view describes how to read an image (what format and which part of it), vulkan never lets us use a raw image directly, so we go through a view of it instead 
+create_image_view :: proc(device : vk.Device , image:vk.Image , format: vk.Format , aspect_flags: vk.ImageAspectFlags) -> (vk.ImageView , bool) {
