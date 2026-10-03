@@ -131,8 +131,9 @@ vk.GetPhysicalDeviceSurfaceFormatsKHR( device , surface , &present_mode_count, r
 return details 
 } 
 
+//which image format to actually use , we are just hardcoding a common, widely supported choice ( 8 bit per color channel, standart sRGB color space) rather than just picking dynamically from what's available 
+choose_swap_surface_format :: proc(available: []vk.SurfaceFormatKHR) -> vk.SurfaceFormatKHR{ 
+ return vk.SurfaceFormatKHR{ format = .B8G8R8A8_UNORM, colorSpace = .SRGB_NONLINEAR}
+}
 
 
-
-
-m
