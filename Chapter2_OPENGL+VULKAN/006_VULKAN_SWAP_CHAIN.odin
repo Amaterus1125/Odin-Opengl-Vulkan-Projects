@@ -118,18 +118,24 @@ formats : []vk.SurfaceFormatKHR ,
 present_modes : []vk.PresentModelKHR, 
 } 
 // ask the gpu + surface combo - what are u actually capable of here , different gpu/drivers/operating systems support different image formats and presentaion styles , so we have to check rather than asume
-query_swapchain_support :: proc(device: vk.PhysicalDevice , surface: vk.SurfaceKHR) 
-details : SwapchainSupportDetails 
-vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(device , surface , &details.capabilities) 
+query_swapchain_support :: proc(device: vk.PhysicalDevice, surface: vk.SurfaceKHR) -> SwapchainSupportDetails {
+details: SwapchainSupportDetails
+vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities)
 
-format_count : u32 
-vk.GetPhysicalDeviceSurfaceFormatsKHR(device , surface , &format_count , nil) 
-if format_count > 0 { 
-details.formats = make([]vk.SurfaceFormatKHR , format_count) 
-vk.GetPhysicalDeviceSurfaceFormatsKHR( device , surface , &present_mode_count, raw_data(details.present_modes) )
-} 
-return details 
-} 
+format_count: u32
+vk.GetPhysicalDeviceSurfaceFormatsKHR(device, surface, &format_count, nil)
+if format_count > 0 {
+details.formats = make([]vk.SurfaceFormatKHR, format_count)
+vk.GetPhysicalDeviceSurfaceFormatsKHR(device, surface, &format_count, raw_data(details.formats))
+}
+present_mode_count: u32
+vk.GetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, nil)
+if present_mode_count > 0 {
+details.present_modes = make([]vk.PresentModeKHR, present_mode_count)
+vk.GetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, raw_data(details.present_modes))
+}
+return details
+}
 
 //which image format to actually use , we are just hardcoding a common, widely supported choice ( 8 bit per color channel, standart sRGB color space) rather than just picking dynamically from what's available 
 choose_swap_surface_format :: proc(available: []vk.SurfaceFormatKHR) -> vk.SurfaceFormatKHR{ 
