@@ -153,3 +153,12 @@ choose_swap_present_mode :: proc(available : []vk.PresentModeKHR) -> vk.PresentM
  return .FIFO //every vulkan driver is required to support this ome so it is a safe fallback if MAILBOX does not work 
 } 
 
+// so how many images should the swap chain actually hold? using just the gpu bare minimum can mean the gpu sometimes has to sit and wait for image to free up, requesting one extra will avoid this stalling, capped at whatever the gpu actual maximum allows
+choose_swap_image_count :: proc(caps: vk.SurfaceCapabilitiesKHR) -> u32 { 
+ image_count := caps.minImageCount + 1 
+if caps.maxImageCount > 0 && image_count > caps.maxImageCount {
+ return caps.maxImageCount 
+} 
+return image_count 
+} 
+
