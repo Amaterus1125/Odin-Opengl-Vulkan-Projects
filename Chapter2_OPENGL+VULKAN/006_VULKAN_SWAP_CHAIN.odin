@@ -204,3 +204,20 @@ return swapchain, result
 
 // an image view describes how to read an image (what format and which part of it), vulkan never lets us use a raw image directly, so we go through a view of it instead 
 create_image_view :: proc(device : vk.Device , image:vk.Image , format: vk.Format , aspect_flags: vk.ImageAspectFlags) -> (vk.ImageView , bool) {
+view_info := vk.ImageViewCreateInfo{
+sType = .IMAGE_VIEW_CREATE_INFO ,
+image = image , 
+viewType = .D2 ,
+format = format,
+subresourceRange = { 
+aspectMask = aspect_flags, 
+ baseMipLevel = 0 , 
+levelCount     = 1,
+baseArrayLayer = 0,
+layerCount     = 1,
+},}
+
+view: vk.ImageView
+result := vk.CreateImageView(device, &view_info, nil, &view)
+return view, result == .SUCCESS
+}
