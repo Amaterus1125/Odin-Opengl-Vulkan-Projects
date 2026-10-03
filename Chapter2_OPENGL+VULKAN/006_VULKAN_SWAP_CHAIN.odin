@@ -266,3 +266,28 @@ if !found {
 fmt.println("no suitable gpu found")
 return
 }
+props: vk.PhysicalDeviceProperties
+	vk.GetPhysicalDeviceProperties(physical_device, &props)
+	fmt.println("using gpu:", cstring(&props.deviceName[0]))
+graphics_family := find_queue_families(physical_device, {.GRAPHICS})
+device_features: vk.PhysicalDeviceFeatures
+device, dev_result := create_device(physical_device, device_features, graphics_family)
+vk_check(dev_result, "creating logical device")
+defer vk.DestroyDevice(device, nil)
+vk.load_proc_addresses(device)
+swapchain, sc_result := create_swapchain(device, physical_device, surface, graphics_family, u32(width), u32(height))
+vk_check(sc_result, "creating swapchain")
+defer vk.DestroySwapchainKHR(device, swapchain, nil)
+images, views := create_swapchain_images(device, swapchain)
+defer delete(images)
+defer {
+for view in views { vk.DestroyImageView(device, view, nil) }
+delete(views)
+}
+fmt.println("swapchain created successfully with", len(images), "images!")
+for !glfw.WindowShouldClose(window) {
+		glfw.PollEvents()
+	}
+}
+
+//the window should open, but for me its not openening but the code is working, i think its not opening is bc of some technicalities with my Arch setup
