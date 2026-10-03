@@ -172,3 +172,11 @@ width , height : u32,
 support := query_swapchain_support(physical_device , surface) 
 defer delete(support.formats)
 defer delete(support.present_modes)
+surface_format := choose_swap_surface_format(support.formats)
+present_mode := choose_swap_present_mode(support.present_modes) 
+family := graphics_family 
+
+create_info := vk.SwapchainCreateInfoKHR{
+sType = .SWAPCHAIN_CREATE_INFO_KHR,
+surface = surface , 
+minImageCount = choose_swap_image_count(support.capabilities),
