@@ -249,3 +249,20 @@ glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
 width, height := i32(800), i32(600)
 window := glfw.CreateWindow(width, height, "Vulkan Swapchain", nil, nil)
 defer glfw.DestroyWindow(window)
+vk.load_proc_addresses(rawptr(glfw.GetInstanceProcAddress))
+instance := create_instance()
+defer vk.DestroyInstance(instance, nil)
+
+surface: vk.SurfaceKHR
+vk_check(glfw.CreateWindowSurface(instance, window, nil, &surface), "creating window surface")
+defer vk.DestroySurfaceKHR(instance, surface, nil)
+
+physical_device, found := find_suitable_physical_device(instance, proc(device: vk.PhysicalDevice) -> bool {
+family_count: u32
+vk.GetPhysicalDeviceQueueFamilyProperties(device, &family_count, nil)
+return family_count > 0
+	})
+if !found {
+fmt.println("no suitable gpu found")
+return
+}
