@@ -242,3 +242,10 @@ views[i] = view
 return
 }
 
+main :: proc() {
+glfw.Init()
+defer glfw.Terminate()
+glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
+width, height := i32(800), i32(600)
+window := glfw.CreateWindow(width, height, "Vulkan Swapchain", nil, nil)
+defer glfw.DestroyWindow(window)
