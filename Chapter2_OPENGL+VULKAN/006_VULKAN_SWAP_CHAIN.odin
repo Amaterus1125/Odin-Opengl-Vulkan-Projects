@@ -162,3 +162,13 @@ if caps.maxImageCount > 0 && image_count > caps.maxImageCount {
 return image_count 
 } 
 
+create_swapchain :: proc{ 
+ device: vk.Device,
+physical_device : vk.PhysicalDevice,
+surface : vk.SurfaceKHR,
+graphics_family : u32,
+width , height : u32,
+} -> (vk.SwapchainKHR, vk.Result) {
+support := query_swapchain_support(physical_device , surface) 
+defer delete(support.formats)
+defer delete(support.present_modes)
