@@ -180,3 +180,20 @@ create_info := vk.SwapchainCreateInfoKHR{
 sType = .SWAPCHAIN_CREATE_INFO_KHR,
 surface = surface , 
 minImageCount = choose_swap_image_count(support.capabilities),
+imageFormat = surface_format.format,
+imageColorSpace = surface_format.colorSpace,
+imageExtent = {width , height},
+imageArrayLayers = 1,
+
+// COLOR_ATTACHMENT = we'll be rendering directly into this image
+// TRANSFER_DST = it's also allowed to be the target of a copy command
+imageUsage = {.COLOR_ATTACHMENT , .TRANSFER_DST},
+imageSharingMode = .EXCLUSIVE ,
+queueFamilyIndexCount = 1 ,
+pQueueFamilyIndices = &family ,
+preTransform = support.capabilities.currentTransform,
+compositeAlpha = {.OPAQUE}
+presentMode = present_mode,
+clipped = true , //lets vulkan skip rendering pixels that are covered by another window on top of ours
+oldSwapchain     = {},
+}
