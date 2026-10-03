@@ -142,4 +142,14 @@ choose_swap_surface_format :: proc(available: []vk.SurfaceFormatKHR) -> vk.Surfa
  return vk.SurfaceFormatKHR{ format = .B8G8R8A8_UNORM, colorSpace = .SRGB_NONLINEAR}
 }
 
+/* "present mode" = the algoritm for when a newly finished frame actually gets shown, MAILBOX is the nice one, it shows the newest frame the moment it's ready, no visible tearing and does not 
+force our game to wait around, not every system supports it through, so we fall back to FIFO (regular vsync) */
+choose_swap_present_mode :: proc(available : []vk.PresentModeKHR) -> vk.PresentModeKHR {
+ for mode in available 
+ if mode == .MAILBOX { 
+ return mode 
+} 
+} 
+ return .FIFO //every vulkan driver is required to support this ome so it is a safe fallback if MAILBOX does not work 
+} 
 
