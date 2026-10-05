@@ -50,3 +50,15 @@ fmt.println("Debug callbacks (" , layer_prefix, "):" , message)
  return false 
 } 
 
+// registers both callbacks above with vulkan, this is the part that actually turns them on 
+setup_debug_callbacks :: proc(instance:vk.Instance) -> (messenger: vk.DebugUtilsMessengerEXT , report_callback: vk.DebugReportCallbackEXT) { 
+  messenger_info := vk.DebugUtilsMessengerCreateInfoEXT{ 
+ sType = .DEBUG_UTILS-MESSENGER-CREATE-INFO-EXT, 
+ messageSeverity = {.WARNING , .ERROR} ,
+messageType = {.GENERAL , .VALIDATION , .PERFORMANCE} , 
+pfnUserCallback = vulkan_debug_callback , 
+} 
+vk_check(vk.CreateDebugUtilsMessengerEXT(instance , &messenger_info , nil , &messenger) , "creating debug messenger") 
+
+report_info := vk.DebugReportCallbackCreateInfoExt{ 
+ 
