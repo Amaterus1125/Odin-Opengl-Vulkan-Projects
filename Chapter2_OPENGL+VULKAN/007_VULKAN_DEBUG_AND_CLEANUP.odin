@@ -30,3 +30,23 @@ user_data : rawptr ,
 return false 
 } 
 
+/* the older more detaield one - also tells us which vulkan object caused the issue, which is useful for tracking down exactly what you misconfigured, we skip printing pure performance 
+warnings so the output doesn't get too noisy to actually read */
+
+vulkan_debug_report_callback :: proc "c" (
+flags: vk.DebugReportFlagsEXT,
+object_type : vk.DebugReportObjectTypeEXT , 
+object : u64
+location : int , 
+message_code : i32 ,
+layer_prefix: cstring , 
+message : cstring , 
+user_data: rawptr, 
+) -> b32 { 
+context = runtime.default_context() 
+ if .PERFORMANCE_WARNING in flags { 
+return false } 
+fmt.println("Debug callbacks (" , layer_prefix, "):" , message) 
+ return false 
+} 
+
