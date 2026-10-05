@@ -61,4 +61,12 @@ pfnUserCallback = vulkan_debug_callback ,
 vk_check(vk.CreateDebugUtilsMessengerEXT(instance , &messenger_info , nil , &messenger) , "creating debug messenger") 
 
 report_info := vk.DebugReportCallbackCreateInfoExt{ 
- 
+ sType = .DEBUG_REPORT_CALLBACK_INFO_EXT , 
+ flags = {.WARNING , .PERFORMANCE_WARNING , .ERROR , .DEBUG } 
+pfnCallback = vulkan_debug_report_callback, 
+} 
+vk_check(vk.CreateDebugReportCallbackEXT(instance , &report_info , nil , &report_callback) , "creating debug report callback") 
+return 
+} 
+
+
