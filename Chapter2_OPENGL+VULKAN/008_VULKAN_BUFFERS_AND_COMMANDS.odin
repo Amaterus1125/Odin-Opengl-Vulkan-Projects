@@ -78,3 +78,12 @@ vk.DestroyBuffer(device , buffer , nil)
 vk.FreeMemory(device , buffer_memory , nil) 
 } 
 
+// SINGLE TIME COMMANDS - a temperary command buffer used for exactly ONE job , then thrown away , useful at times when we need the gpu to do something right now and wait for it , rather than it being part of our normal per-frame rendering work 
+
+begin_single_time_commands :: proc(device: vk.Device , command_pool: vk.Command_Pool)  -> vk.CommandBuffer { 
+alloc_info := vk.CommandBufferAllocateInfo{ 
+sType = .COMMAND_BUFFER_ALLOCATE_INFO , commandPool = command_pool , 
+level = .PRIMARY , commandBufferCOunt = 1, 
+} 
+
+
