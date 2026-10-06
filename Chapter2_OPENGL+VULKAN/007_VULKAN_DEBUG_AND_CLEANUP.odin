@@ -99,4 +99,167 @@ result := vk.CreateSemaphore(device , &info , nil , &sem)
 return sem , result 
 }
 
-// ALL THINGS BELOW ARE STANDART AND REUSED INSTANCE, DEVICE AND SWAPCHAIN , SO ITS JUST A COPY PASTE 
+// next part BELOW ARE STANDART AND REUSED INSTANCE, DEVICE AND SWAPCHAIN , SO ITS JUST A COPY PASTE 
+create_instance :: proc() -> vk.Instance {
+	layers := []cstring{"VK_LAYER_KHRONOS_validation"}
+	glfw_extensions := glfw.GetRequiredInstanceExtensions()
+	extensions := make([dynamic]cstring)
+	defer delete(extensions)
+	append(&extensions, ..glfw_extensions)
+	append(&extensions, vk.EXT_DEBUG_UTILS_EXTENSION_NAME)
+	append(&extensions, vk.EXT_DEBUG_REPORT_EXTENSION_NAME)
+
+	app_info := vk.ApplicationInfo{
+		sType              = .APPLICATION_INFO,
+		pApplicationName   = "Vulkan",
+		applicationVersion = vk.MAKE_VERSION(1, 0, 0),
+		pEngineName        = "No Engine",
+		engineVersion      = vk.MAKE_VERSION(1, 0, 0),
+		apiVersion         = vk.API_VERSION_1_1,
+	}
+	create_info := vk.InstanceCreateInfo{
+		sType                   = .INSTANCE_CREATE_INFO,
+		pApplicationInfo        = &app_info,
+		enabledLayerCount       = u32(len(layers)),
+		ppEnabledLayerNames     = raw_data(layers),
+		enabledExtensionCount   = u32(len(extensions)),
+		ppEnabledExtensionNames = raw_data(extensions),
+	}
+	instance: vk.Instance
+	vk_check(vk.CreateInstance(&create_info, nil, &instance), "creating instance")
+	vk.load_proc_addresses(instance)
+	return instance
+}
+
+find_suitable_physical_device :: proc(instance: vk.Instance, selector: proc(device: vk.PhysicalDevice) -> bool) -> (vk.PhysicalDevice, bool) {
+	device_count: u32
+	vk.EnumeratePhysicalDevices(instance, &device_count, nil)
+	if device_count == 0 {
+		return {}, false
+	}
+	devices := make([]vk.PhysicalDevice, device_count)
+	defer delete(devices)
+	vk.EnumeratePhysicalDevices(instance, &device_count, raw_data(devices))
+	for device in devices {
+		if selector(device) {
+			return device, true
+		}
+	}
+	return {}, false
+}
+
+find_queue_families :: proc(device: vk.PhysicalDevice, desired_flags: vk.QueueFlags) -> u32 {
+	family_count: u32
+	vk.GetPhysicalDeviceQueueFamilyProperties(device, &family_count, nil)
+	families := make([]vk.QueueFamilyProperties, family_count)
+	defer delete(families)
+	vk.GetPhysicalDeviceQueueFamilyProperties(device, &family_count, raw_data(families))
+	for family, i in families {
+		if family.queueCount > 0 && (family.queueFlags & desired_flags == desired_flags) {
+			return u32(i)
+		}
+	}
+	return 0
+}
+
+create_device :: proc(physical_device: vk.PhysicalDevice, device_features: vk.PhysicalDeviceFeatures, graphics_family: u32) -> (vk.Device, vk.Result) {
+	extensions := []cstring{vk.KHR_SWAPCHAIN_EXTENSION_NAME}
+	queue_priority: f32 = 1.0
+	queue_info := vk.DeviceQueueCreateInfo{
+		sType = .DEVICE_QUEUE_CREATE_INFO, queueFamilyIndex = graphics_family,
+		queueCount = 1, pQueuePriorities = &queue_priority,
+	}
+	features_local := device_features
+	create_info := vk.DeviceCreateInfo{
+		sType = .DEVICE_CREATE_INFO, queueCreateInfoCount = 1, pQueueCreateInfos = &queue_info,
+		enabledExtensionCount = u32(len(extensions)), ppEnabledExtensionNames = raw_data(extensions),
+		pEnabledFeatures = &features_local,
+	}
+	device: vk.Device
+	result := vk.CreateDevice(physical_device, &create_info, nil, &device)
+	return device, result
+}
+
+choose_swap_surface_format :: proc(available: []vk.SurfaceFormatKHR) -> vk.SurfaceFormatKHR {
+	return vk.SurfaceFormatKHR{format = .B8G8R8A8_UNORM, colorSpace = .SRGB_NONLINEAR}
+}
+
+choose_swap_present_mode :: proc(available: []vk.PresentModeKHR) -> vk.PresentModeKHR {
+	for mode in available {
+		if mode == .MAILBOX {
+			return mode
+		}
+	}
+	return .FIFO
+}
+
+choose_swap_image_count :: proc(caps: vk.SurfaceCapabilitiesKHR) -> u32 {
+	image_count := caps.minImageCount + 1
+	if caps.maxImageCount > 0 && image_count > caps.maxImageCount {
+		return caps.maxImageCount
+	}
+	return image_count
+}
+
+create_swapchain :: proc(device: vk.Device, physical_device: vk.PhysicalDevice, surface: vk.SurfaceKHR, graphics_family: u32, width, height: u32) -> (vk.SwapchainKHR, vk.Result) {
+	caps: vk.SurfaceCapabilitiesKHR
+	vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &caps)
+
+	format_count: u32
+	vk.GetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, nil)
+	formats := make([]vk.SurfaceFormatKHR, format_count)
+	defer delete(formats)
+	vk.GetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, raw_data(formats))
+
+	present_mode_count: u32
+	vk.GetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_mode_count, nil)
+	present_modes := make([]vk.PresentModeKHR, present_mode_count)
+	defer delete(present_modes)
+	vk.GetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_mode_count, raw_data(present_modes))
+
+	surface_format := choose_swap_surface_format(formats)
+	present_mode := choose_swap_present_mode(present_modes)
+	family := graphics_family
+
+	create_info := vk.SwapchainCreateInfoKHR{
+		sType = .SWAPCHAIN_CREATE_INFO_KHR, surface = surface,
+		minImageCount = choose_swap_image_count(caps),
+		imageFormat = surface_format.format, imageColorSpace = surface_format.colorSpace,
+		imageExtent = {width, height}, imageArrayLayers = 1,
+		imageUsage = {.COLOR_ATTACHMENT, .TRANSFER_DST}, imageSharingMode = .EXCLUSIVE,
+		queueFamilyIndexCount = 1, pQueueFamilyIndices = &family,
+		preTransform = caps.currentTransform, compositeAlpha = {.OPAQUE},
+		presentMode = present_mode, clipped = true, oldSwapchain = {},
+	}
+	swapchain: vk.SwapchainKHR
+	result := vk.CreateSwapchainKHR(device, &create_info, nil, &swapchain)
+	return swapchain, result
+}
+
+create_image_view :: proc(device: vk.Device, image: vk.Image, format: vk.Format, aspect_flags: vk.ImageAspectFlags) -> (vk.ImageView, bool) {
+	view_info := vk.ImageViewCreateInfo{
+		sType = .IMAGE_VIEW_CREATE_INFO, image = image, viewType = .D2, format = format,
+		subresourceRange = {aspectMask = aspect_flags, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1},
+	}
+	view: vk.ImageView
+	result := vk.CreateImageView(device, &view_info, nil, &view)
+	return view, result == .SUCCESS
+}
+
+create_swapchain_images :: proc(device: vk.Device, swapchain: vk.SwapchainKHR) -> (images: []vk.Image, views: []vk.ImageView) {
+	image_count: u32
+	vk.GetSwapchainImagesKHR(device, swapchain, &image_count, nil)
+	images = make([]vk.Image, image_count)
+	views = make([]vk.ImageView, image_count)
+	vk.GetSwapchainImagesKHR(device, swapchain, &image_count, raw_data(images))
+	for i in 0 ..< image_count {
+		view, ok := create_image_view(device, images[i], .B8G8R8A8_UNORM, {.COLOR})
+		if !ok {
+			fmt.println("failed to create image view for swapchain image", i)
+			return
+		}
+		views[i] = view
+	}
+	return
+}
+
