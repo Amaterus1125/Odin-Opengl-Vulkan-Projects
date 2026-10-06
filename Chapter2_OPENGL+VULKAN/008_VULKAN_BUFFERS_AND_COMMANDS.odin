@@ -109,4 +109,14 @@ vk.QueueWaitIdle(graphics_queue)  // the actual wait until the gpu is donw part
 vk.FreeCommandBuffers(device , command_pool , 1 &cb) 
 } 
 
+/* the below code copies data from one gpu buffer straight into another , gpu-side without the cpu ever touching the actual bytes , this is exactly how we later get vertex/index data 
+from a cpu writable "staging" uffer into a fast gpu-only buffer the gpu can actually render from */
+copy_buffer :: proc(device: vk.Device, command_pool: vk.CommandPool, graphics_queue: vk.Queue, src, dst: vk.Buffer, size: vk.DeviceSize) {
+cb := begin_single_time_commands(device, command_pool) 
+copy_region := vk.BufferCopy{srcOffset =0 , dstOffset = 0 , size = size } 
+vk.CmdCopyBuffer(cb , src , dst , 1 , &copy_region) 
+end_single_time_commands(device , command_pool , graphics_queue , cb) 
+} 
+
+
 
