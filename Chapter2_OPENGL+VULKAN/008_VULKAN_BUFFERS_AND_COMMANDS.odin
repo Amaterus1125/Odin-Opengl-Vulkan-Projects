@@ -157,8 +157,8 @@ vk.UnmapMemory(device , buffer_memory) //give our cpu pointer , the gpu is now f
 } 
 
 //PART - 2 USING VULKAN COMMAND BUFFERS , FILLINF ONE WITH ACTUAL DRAWING COMMANDS 
-// Quick heads-up before this one: the book's version of this function assumes you already have a RENDER PASS, FRAMEBUFFERS, and a GRAPHIC'S PIPELINE set up none of which we've built yet (those are later recipes in the book). So this function is written to take all of that as PARAMETERS, so it's fully correct and ready to use the moment we
- build those pieces, rather than silently referencing things tha don't exist. We won't actually CALL this function yet in main() for that same reason.
+/*Quick heads-up before this one: the book's version of this function assumes you already have a RENDER PASS, FRAMEBUFFERS, and a GRAPHIC'S PIPELINE set up none of which we've built yet (those are later recipes in the book). So this function is written to take all of that as PARAMETERS, so it's fully correct and ready to use the moment we
+ build those pieces, rather than silently referencing things tha don't exist. We won't actually CALL this function yet in main() for that same reason. */
 fill_command_buffer :: proc(
 command_buffer: vk.CommandBuffer , 
 render_pass: vk.RenderPass, 
