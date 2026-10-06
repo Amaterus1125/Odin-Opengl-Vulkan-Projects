@@ -343,3 +343,53 @@ destroy_vulkan_instance :: proc(vk_instance: ^VulkanInstance) {
 	vk.DestroyDebugUtilsMessengerEXT(vk_instance.instance, vk_instance.messenger, nil)
 	vk.DestroyInstance(vk_instance.instance, nil)
 }
+/ MAIN
+
+
+main :: proc() {
+	glfw.Init()
+	defer glfw.Terminate()
+	glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
+
+	width, height := i32(800), i32(600)
+	window := glfw.CreateWindow(width, height, "Vulkan Debug + Cleanup", nil, nil)
+	defer glfw.DestroyWindow(window)
+
+	vk.load_proc_addresses(rawptr(glfw.GetInstanceProcAddress))
+
+	vk_instance: VulkanInstance
+	vk_instance.instance = create_instance()
+
+	vk_check(glfw.CreateWindowSurface(vk_instance.instance, window, nil, &vk_instance.surface), "creating window surface")
+
+	// turn on the debug callbacks -- from this point on, any vulkan
+	// mistake we make prints a clear message instead of failing silently
+	vk_instance.messenger, vk_instance.report_callback = setup_debug_callbacks(vk_instance.instance)
+
+	device_features: vk.PhysicalDeviceFeatures
+	render_device, ok := init_vulkan_render_device(
+		vk_instance,
+		u32(width), u32(height),
+		proc(device: vk.PhysicalDevice) -> bool {
+			family_count: u32
+			vk.GetPhysicalDeviceQueueFamilyProperties(device, &family_count, nil)
+			return family_count > 0
+		},
+		device_features,
+	)
+	if !ok {
+		fmt.println("failed to initialize vulkan render device")
+		return
+	}
+
+	fmt.println("vulkan fully initialized:", len(render_device.swapchain_images), "swapchain images,", len(render_device.command_buffers), "command buffers ready")
+
+	for !glfw.WindowShouldClose(window) {
+		glfw.PollEvents()
+	}
+
+	// clean, organized teardown -- 2 function calls instead of
+	// remembering a dozen individual destroy calls in the right order
+	destroy_vulkan_render_device(&render_device)
+	destroy_vulkan_instance(&vk_instance)
+}
