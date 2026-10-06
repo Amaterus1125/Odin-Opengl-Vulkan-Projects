@@ -146,4 +146,16 @@ if !success {
 return buffers, buffers_memory, true
 }
 
+//called ebry frame to push this frame data (like freshly computed MVP matrix) into one specific uniform buffer 
+update_uniform_buffer :: proc(device: vk.Device, buffer_memory: vk.DeviceMemory, ubo: UniformBuffer) {
+ubo_local := ubo //odin can't take the address of a plain parameter , so we copy it into a local variable first 
+data : rawptr   
+//map the memory - temporarily get a regular cpu pointer we are allowed to write into , even though the memory physically lives on the gpu 
+vk.MapMemory(device , buffer_memory , 0 , vk.DeviceSize(size_of(UniformBuffer)) , {} , &data) 
+mem.copy(data , &ub0_local, size_of(UniformBuffer) ) //plain byte copy , 
+vk.UnmapMemory(device , buffer_memory) //give our cpu pointer , the gpu is now free to use this memory again 
+} 
+
+//PART - 2 USING VULKAN COMMAND BUFFERS , FILLINF ONE WITH ACTUAL DRAWING COMMANDS 
+
 
