@@ -263,3 +263,28 @@ create_swapchain_images :: proc(device: vk.Device, swapchain: vk.SwapchainKHR) -
 	return
 }
 
+// PART 3 - the init/destroy functions , this is the actual point of this recepie , everything from the last 2 parts is condensed into one function call , filling in one struct instead of a dozen seperate steps scatered through main()
+
+init_vulkan_render_device :: proc( 
+vk_instance : VulkanInstance , 
+width , height : u32. 
+selector: proc(device: vk.PhysicalDevice) -> bool,
+device_features: vk.PhysicalDeviceFeatures,) -> (dev: VulkanRenderDevice, ok:bool) { 
+physical_device , found := find_suitable_physical_device(vk_instance.instance , selector) 
+if !found { 
+ return {} , false 
+} 
+dev.physical_device = physical_device 
+dev.graphics_family = find_queue_families(physical_device, {.GRAPHICS} ) 
+
+device_result : vk.Result 
+dev.evice , device_result = create_device9physical_device , device_features , dev.graphics_family) 
+vk_check(device_result , " creating the device") 
+vk.load_proc_addresses(dev.device) 
+
+vk.GetDeviceQueue(dev.device , dev.graphics_family , 0 , &dev.graphics_queue) 
+if dev.grapics_queue == nil { 
+return dev , false 
+} 
+
+//double check this queue family can actually present  images to our specific window surface having a graphics queue doesnot sutomatically gurantee it can show things on screen 
