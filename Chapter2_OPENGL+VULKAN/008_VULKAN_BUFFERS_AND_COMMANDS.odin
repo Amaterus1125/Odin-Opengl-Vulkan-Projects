@@ -207,3 +207,131 @@ vk.CmdBindDescriptorSets(command_buffer , .GRAPHICS , pipeline_layout , 0 , 1 , 
 vk.CmdDraw(command_buffer , vertex_count, 1 , 0 , 0) 
 vk.CmdEndRenderPass(command_buffer) 
 return vk.EndCommandBuffer(command_buffer) == .SUCCESS 
+
+// REUSED SETUP FROM THE PREVIOUS FILES
+create_instance :: proc() -> vk.Instance {
+	layers := []cstring{"VK_LAYER_KHRONOS_validation"}
+	glfw_extensions := glfw.GetRequiredInstanceExtensions()
+	app_info := vk.ApplicationInfo{sType = .APPLICATION_INFO, pApplicationName = "Vulkan", apiVersion = vk.API_VERSION_1_1}
+	create_info := vk.InstanceCreateInfo{
+		sType = .INSTANCE_CREATE_INFO, pApplicationInfo = &app_info,
+		enabledLayerCount = u32(len(layers)), ppEnabledLayerNames = raw_data(layers),
+		enabledExtensionCount = u32(len(glfw_extensions)), ppEnabledExtensionNames = raw_data(glfw_extensions),
+	}
+	instance: vk.Instance
+	vk_check(vk.CreateInstance(&create_info, nil, &instance), "creating instance")
+	vk.load_proc_addresses(instance)
+	return instance
+}
+
+find_suitable_physical_device :: proc(instance: vk.Instance, selector: proc(device: vk.PhysicalDevice) -> bool) -> (vk.PhysicalDevice, bool) {
+	device_count: u32
+	vk.EnumeratePhysicalDevices(instance, &device_count, nil)
+	if device_count == 0 { return {}, false }
+	devices := make([]vk.PhysicalDevice, device_count)
+	defer delete(devices)
+	vk.EnumeratePhysicalDevices(instance, &device_count, raw_data(devices))
+	for device in devices { if selector(device) { return device, true } }
+	return {}, false
+}
+
+find_queue_families :: proc(device: vk.PhysicalDevice, desired_flags: vk.QueueFlags) -> u32 {
+	family_count: u32
+	vk.GetPhysicalDeviceQueueFamilyProperties(device, &family_count, nil)
+	families := make([]vk.QueueFamilyProperties, family_count)
+	defer delete(families)
+	vk.GetPhysicalDeviceQueueFamilyProperties(device, &family_count, raw_data(families))
+	for family, i in families {
+		if family.queueCount > 0 && (family.queueFlags & desired_flags == desired_flags) { return u32(i) }
+	}
+	return 0
+}
+
+create_device :: proc(physical_device: vk.PhysicalDevice, device_features: vk.PhysicalDeviceFeatures, graphics_family: u32) -> (vk.Device, vk.Result) {
+	extensions := []cstring{vk.KHR_SWAPCHAIN_EXTENSION_NAME}
+	queue_priority: f32 = 1.0
+	queue_info := vk.DeviceQueueCreateInfo{sType = .DEVICE_QUEUE_CREATE_INFO, queueFamilyIndex = graphics_family, queueCount = 1, pQueuePriorities = &queue_priority}
+	features_local := device_features
+	create_info := vk.DeviceCreateInfo{
+		sType = .DEVICE_CREATE_INFO, queueCreateInfoCount = 1, pQueueCreateInfos = &queue_info,
+		enabledExtensionCount = u32(len(extensions)), ppEnabledExtensionNames = raw_data(extensions),
+		pEnabledFeatures = &features_local,
+	}
+	device: vk.Device
+	result := vk.CreateDevice(physical_device, &create_info, nil, &device)
+	return device, result
+}
+
+
+// MAIN demonstrates the buffer/memory functions from Part 1 (these genuinely work standalone). fill_command_buffer from Part 2 is left unused here on purpose, as explained above
+
+
+main :: proc() {
+	glfw.Init()
+	defer glfw.Terminate()
+	glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
+
+	window := glfw.CreateWindow(800, 600, "Vulkan Buffers", nil, nil)
+	defer glfw.DestroyWindow(window)
+	vk.load_proc_addresses(rawptr(glfw.GetInstanceProcAddress))
+
+	instance := create_instance()
+	defer vk.DestroyInstance(instance, nil)
+
+	surface: vk.SurfaceKHR
+	vk_check(glfw.CreateWindowSurface(instance, window, nil, &surface), "creating window surface")
+	defer vk.DestroySurfaceKHR(instance, surface, nil)
+
+	physical_device, found := find_suitable_physical_device(instance, proc(device: vk.PhysicalDevice) -> bool {
+		family_count: u32
+		vk.GetPhysicalDeviceQueueFamilyProperties(device, &family_count, nil)
+		return family_count > 0
+	})
+	if !found { fmt.println("no suitable gpu found"); return }
+
+	graphics_family := find_queue_families(physical_device, {.GRAPHICS})
+	device_features: vk.PhysicalDeviceFeatures
+	device, dev_result := create_device(physical_device, device_features, graphics_family)
+	vk_check(dev_result, "creating logical device")
+	defer vk.DestroyDevice(device, nil)
+	vk.load_proc_addresses(device)
+
+	graphics_queue: vk.Queue
+	vk.GetDeviceQueue(device, graphics_family, 0, &graphics_queue)
+
+	pool_info := vk.CommandPoolCreateInfo{sType = .COMMAND_POOL_CREATE_INFO, queueFamilyIndex = graphics_family}
+	command_pool: vk.CommandPool
+	vk_check(vk.CreateCommandPool(device, &pool_info, nil, &command_pool), "creating command pool")
+	defer vk.DestroyCommandPool(device, command_pool, nil)
+
+	// --- DEMO 1: uniform buffers ---
+	// pretend we have 2 swapchain images for this demo
+	ubo_buffers, ubo_memory, ubo_ok := create_uniform_buffers(device, physical_device, 2)
+	if !ubo_ok { fmt.println("failed to create uniform buffers"); return }
+	defer for i in 0 ..< len(ubo_buffers) { destroy_buffer(device, ubo_buffers[i], ubo_memory[i]) }
+
+	my_mvp := UniformBuffer{mvp = 1} // "1" here fills the matrix as an identity matrix -- no transform, just a placeholder
+	update_uniform_buffer(device, ubo_memory[0], my_mvp)
+	fmt.println("uniform buffers created and updated successfully")
+
+	// --- DEMO 2: staging buffer -> device-local buffer, via copy_buffer ---
+	// this is the exact pattern you'd use to upload real vertex data:
+	// write into cpu-visible memory, then let the gpu copy it into
+	// faster gpu-only memory
+	sample_data := [4]f32{1.0, 2.0, 3.0, 4.0}
+	data_size := vk.DeviceSize(size_of(sample_data))
+
+	staging_buf, staging_mem, _ := create_buffer(device, physical_device, data_size, {.TRANSFER_SRC}, {.HOST_VISIBLE, .HOST_COHERENT})
+	defer destroy_buffer(device, staging_buf, staging_mem)
+
+	mapped: rawptr
+	vk.MapMemory(device, staging_mem, 0, data_size, {}, &mapped)
+	mem.copy(mapped, &sample_data, int(data_size))
+	vk.UnmapMemory(device, staging_mem)
+
+	gpu_buf, gpu_mem, _ := create_buffer(device, physical_device, data_size, {.TRANSFER_DST, .VERTEX_BUFFER}, {.DEVICE_LOCAL})
+	defer destroy_buffer(device, gpu_buf, gpu_mem)
+
+	copy_buffer(device, command_pool, graphics_queue, staging_buf, gpu_buf, data_size)
+	fmt.println("staging buffer successfully copied into gpu-local buffer")
+}
