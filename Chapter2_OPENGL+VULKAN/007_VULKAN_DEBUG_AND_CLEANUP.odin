@@ -69,4 +69,34 @@ vk_check(vk.CreateDebugReportCallbackEXT(instance , &report_info , nil , &report
 return 
 } 
 
+//PART -2 
+/* instead of a pile of loose variables , everything related to our connectio to vulkan itself, lives in one struct, and everything related to our actual gpu and its resources lives in another  */
+VulkanInstance :: struct { 
+instance: vk.Instance , 
+surface: vk.SurfaceKHR,
+messenger: vk.DebugUtilsMessengerEXT,
+report_callback: vk.DebugReportCallbackEXT,
+}
 
+VUlkanRenderDevice :: struct { 
+ device:  vk.Device, 
+graphics_queue: vk.Queue, 
+physical_device: vk.PhysicalDevice , 
+graphics_family : u32, 
+semaphore: vk.Semaphore  ,  // signals that the swapchain image is ready to be rendered into 
+render_semaphore: vk.Semaphore , // signals that the rendering is finished , safe to present now 
+swapchain: vk.SwapchainKHR ,
+swapchain_images : []vk.Image,
+swapchain_image_views: []vk.ImageView,
+command_pool: vk.CommandPool , 
+command_buffers: []vk.CommandBuffer,
+}
+
+create_semaphore :: proc(device: vk.Device) -> (vk.Semaphore, vk.Result) {
+info := vk.SemaphoreCreateInfo{sType = .SEMAPHORE_CREATE_INFO}
+sem: vk.Semaphore 
+result := vk.CreateSemaphore(device , &info , nil , &sem) 
+return sem , result 
+}
+
+// ALL THINGS BELOW ARE STANDART AND REUSED INSTANCE, DEVICE AND SWAPCHAIN , SO ITS JUST A COPY PASTE 
