@@ -69,7 +69,7 @@ vk_check(vk.CreateDebugReportCallbackEXT(instance , &report_info , nil , &report
 return 
 } 
 
-//PART -2 
+//PART -2 -- the semaphore CLEANUP PART OF THE CODE 
 /* instead of a pile of loose variables , everything related to our connectio to vulkan itself, lives in one struct, and everything related to our actual gpu and its resources lives in another  */
 VulkanInstance :: struct { 
 instance: vk.Instance , 
