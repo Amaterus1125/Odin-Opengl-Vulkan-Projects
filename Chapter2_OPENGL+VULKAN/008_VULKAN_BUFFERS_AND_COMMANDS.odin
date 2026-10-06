@@ -95,5 +95,18 @@ vk.BeginCommandBuffer(command_buffer , &begin_info)
 return command_buffer 
 } 
 
+/* now after that finishes recording , submits the command buffer to the GPU and then waits right here until the gpu has actually finished running it, that wait is the unsrual and important part , our normal per frame rendering never waits like this 
+but for one off setup task like "upload this data" waiting is exactly what we want so we know it's safe to use the result immediatly after */
+
+end_single_time_commands :: proc(device : vk.Device , command_pool: vk.CommandPoll , grphics_queue: vk.Queue , command_buffer = vk.CommandBuffer ) { 
+cb := command_buffer 
+vk.EndCommandBuffer(cb) 
+submit_info := vk.SubmitInfo{ 
+sType = .SUBMIT_INFO , commandBufferCount = 1 , pCommandBuffers = &cb , 
+} 
+vk.QueueSubmit(graphics_queue , 1 , &submit_info , {})
+vk.QueueWaitIdle(graphics_queue)  // the actual wait until the gpu is donw part 
+vk.FreeCommandBuffers(device , command_pool , 1 &cb) 
+} 
 
 
