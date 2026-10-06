@@ -85,5 +85,15 @@ alloc_info := vk.CommandBufferAllocateInfo{
 sType = .COMMAND_BUFFER_ALLOCATE_INFO , commandPool = command_pool , 
 level = .PRIMARY , commandBufferCOunt = 1, 
 } 
+command_buffer : vk.COmmandBuffer 
+vk.AllocateCommandBuffers(device , &alloc_info , &command_buffer) 
+begin_info := vk.COmmandBufferBeginInfo{ 
+sType = .COMMAND_BUFFER_BEGIN_INFO , 
+flags = { .ONE_TIME_SUBMIT} ,  // tells the vulkan that we are oly going to submit this buffer once and it should optimize for that 
+} 
+vk.BeginCommandBuffer(command_buffer , &begin_info) 
+return command_buffer 
+} 
+
 
 
