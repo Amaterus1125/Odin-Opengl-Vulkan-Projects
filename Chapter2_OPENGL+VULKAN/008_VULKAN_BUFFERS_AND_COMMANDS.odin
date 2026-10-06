@@ -118,5 +118,32 @@ vk.CmdCopyBuffer(cb , src , dst , 1 , &copy_region)
 end_single_time_commands(device , command_pool , graphics_queue , cb) 
 } 
 
+/* UNIFORM BUFFERS - a small buffer holding data that stays the same for every vertex/pixel for one draw call , our MVP matrix is the classic example as every vertex in a mesh gets multiplied by the exact same MVP, 
+so it makes sense to store it once , seperately , rather than repeating it per vertex */
+
+UniformBuffer :: struct { 
+mvp : matrix[4,4]f32 ,
+} 
+/* one uniform buffer gets created per swapchain image because different swapchain images can be in "flight" (still being used by gpu) at overlapping times , each needs is own 
+copy of this frame data so we don't accidently overwrite data the gpu has not finished reading yet */ 
+create_uniform_buffers :: proc(device: vk.Device, physical_device: vk.PhysicalDevice, image_count: int) -> (buffers: []vk.Buffer, buffers_memory: []vk.DeviceMemory, ok: bool) {
+buffer_size := vk.DeviceSize(size_of(UniformBuffer))
+buffers = make([]vk.Buffer , image_count) 
+buffers_memory = make([]vk.DeviceMemory , image_count) 
+
+for i in 0..< image_count { 
+// HOST_VISIBLE = the cpu is actually allowed to write into this memory directly 
+//HOST_COHORENT = we don't need to manually flush our writes ,they become visible to the gpu automatically 
+//this combination trades a little gpu-side speed for the convieneice of writing to it plainly every frame , which is right call for small, frequently-updated data like this 
+buf , buf_mem , success := create_buffer(device , physical_device , buffer_size , {.UNIFORM_BUFFER}, {.HOST_VISIBLE , .HOST_COHERENT}) 
+if !success {
+	fmt.println("Fail: buffers")
+	return buffers, buffers_memory, false
+}
+	buffers[i] = buf
+	buffers_memory[i] = buf_mem
+	}
+return buffers, buffers_memory, true
+}
 
 
