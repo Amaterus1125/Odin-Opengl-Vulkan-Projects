@@ -157,5 +157,53 @@ vk.UnmapMemory(device , buffer_memory) //give our cpu pointer , the gpu is now f
 } 
 
 //PART - 2 USING VULKAN COMMAND BUFFERS , FILLINF ONE WITH ACTUAL DRAWING COMMANDS 
+// Quick heads-up before this one: the book's version of this function assumes you already have a RENDER PASS, FRAMEBUFFERS, and a GRAPHIC'S PIPELINE set up none of which we've built yet (those are later recipes in the book). So this function is written to take all of that as PARAMETERS, so it's fully correct and ready to use the moment we
+ build those pieces, rather than silently referencing things tha don't exist. We won't actually CALL this function yet in main() for that same reason.
+fill_command_buffer :: proc(
+command_buffer: vk.CommandBuffer , 
+render_pass: vk.RenderPass, 
+framebuffer : vk.FrameBuffer , 
+pipeline : vk.Pipeline , 
+pipeline_layout : vk.PipelineLayout , 
+descriptor_set : vk.DescriptorSet,
+screem_width , screen_height : u32, 
+clear_color : [4]f32,
+vertex_count: u32, ) -> bool { 
+begin_info := vk.CommandBufferBeginInfo{ 
+sType = .COMMAND_BUFFER_BEGIN_INFO, 
+flags = {.SIMULTANEOUS_USE) , // this buffer is allowed to be submitted again while a previous submission might still be running 
+} 
 
+vk_check(vk.BeginCommandBuffer(command_buffer , &begin_info) , "beignning command buffer") 
 
+//next code is abt what to reset the screen to before drawing , one value for actual picture (color) , one for the depth buffer (used to figure out which pixels are in front of others) 
+clear_values := [2]vk.ClearValue{ 
+{color = {float32 = clear_color}} ,
+{depthStencil = {depth = 1.0 , stencil = 0}} , } 
+screen_rect := vk.Rect2D{offset = {0,0} , extent = {screen_width , screen_height} } 
+
+//a render pass describes the overall plan for this drawing operation (what gets cleared, what format the output is etc, beigning one tells the gpu everything between here and CmdEndRenderPass belongs to this one drawing operation 
+render_pass_info := vk.RenderPassBeginInfo{ 
+sType = .RENDER_PASS_BEGIN_INFO, 
+render_pass_info := vk.RenderPassBeginInfo{ 
+sType = .RENDER_PASS_BEGIN_INFO, 
+renderPass = render_pass , 
+framebuffer , framebuffer , //which actual image we are drawing into this time 
+renderArea = screen_rect , 
+clearValueCount = 2 , 
+pClearValues = &clear_values[0] , 
+} 
+vk.CmdBeginRenderPass9command_buffer , &render_pass_info , .INLINE) 
+// bind 0 from now on , ise this one , the pipeline budles up the vertex/fragment shaders plus a big pile of fixed function gpu settings, into one usable object 
+vk.CmdBindPipeline9command_buffer , .GRAPHICS , pipeline) 
+
+// descriptor sets are how buffers/textures (like our uniform buffer from part 1) actually get connected to a shader at draw time 
+ds := descriptor_set 
+vk.CmdBindDescriptorSets(command_buffer , .GRAPHICS , pipeline_layout , 0 , 1 , &ds , 0 , nil) 
+
+/* the above is the actual drew somethings command ,this calls the plain (non-indexed) CmdDraw, with a vertex count computed from what WOULD be an index buffer's size that's not a mistake, it's the SAME programmable-vertex-pulling
+ trick from our earlier 008 file: the vertex shader manually looksup each vertex using gl_VertexID equivalent logic, so a normal "index buffer" isn't bound here the usual way */ 
+
+vk.CmdDraw(command_buffer , vertex_count, 1 , 0 , 0) 
+vk.CmdEndRenderPass(command_buffer) 
+return vk.EndCommandBuffer(command_buffer) == .SUCCESS 
