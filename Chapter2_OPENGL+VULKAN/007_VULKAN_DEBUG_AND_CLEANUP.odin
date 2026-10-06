@@ -288,3 +288,58 @@ return dev , false
 } 
 
 //double check this queue family can actually present  images to our specific window surface having a graphics queue doesnot sutomatically gurantee it can show things on screen 
+present_supported: b32
+	vk.GetPhysicalDeviceSurfaceSupportKHR(physical_device, dev.graphics_family, vk_instance.surface, &present_supported)
+	if !present_supported {
+		return dev, false
+	}
+
+	swapchain_result: vk.Result
+	dev.swapchain, swapchain_result = create_swapchain(dev.device, physical_device, vk_instance.surface, dev.graphics_family, width, height)
+	vk_check(swapchain_result, "creating swapchain")
+
+	dev.swapchain_images, dev.swapchain_image_views = create_swapchain_images(dev.device, dev.swapchain)
+	image_count := len(dev.swapchain_images)
+
+	sem_result1: vk.Result
+	dev.semaphore, sem_result1 = create_semaphore(dev.device)
+	vk_check(sem_result1, "creating semaphore")
+
+	sem_result2: vk.Result
+	dev.render_semaphore, sem_result2 = create_semaphore(dev.device)
+	vk_check(sem_result2, "creating render semaphore")
+
+	pool_info := vk.CommandPoolCreateInfo{sType = .COMMAND_POOL_CREATE_INFO, queueFamilyIndex = dev.graphics_family}
+	vk_check(vk.CreateCommandPool(dev.device, &pool_info, nil, &dev.command_pool), "creating command pool")
+
+	dev.command_buffers = make([]vk.CommandBuffer, image_count)
+	alloc_info := vk.CommandBufferAllocateInfo{
+		sType = .COMMAND_BUFFER_ALLOCATE_INFO, commandPool = dev.command_pool,
+		level = .PRIMARY, commandBufferCount = u32(image_count),
+	}
+	vk_check(vk.AllocateCommandBuffers(dev.device, &alloc_info, raw_data(dev.command_buffers)), "allocating command buffers")
+
+	return dev, true
+}
+
+destroy_vulkan_render_device :: proc(dev: ^VulkanRenderDevice) {
+	for view in dev.swapchain_image_views {
+		vk.DestroyImageView(dev.device, view, nil)
+	}
+	delete(dev.swapchain_image_views)
+	delete(dev.swapchain_images)
+	delete(dev.command_buffers)
+
+	vk.DestroySwapchainKHR(dev.device, dev.swapchain, nil)
+	vk.DestroyCommandPool(dev.device, dev.command_pool, nil)
+	vk.DestroySemaphore(dev.device, dev.semaphore, nil)
+	vk.DestroySemaphore(dev.device, dev.render_semaphore, nil)
+	vk.DestroyDevice(dev.device, nil)
+}
+
+destroy_vulkan_instance :: proc(vk_instance: ^VulkanInstance) {
+	vk.DestroySurfaceKHR(vk_instance.instance, vk_instance.surface, nil)
+	vk.DestroyDebugReportCallbackEXT(vk_instance.instance, vk_instance.report_callback, nil)
+	vk.DestroyDebugUtilsMessengerEXT(vk_instance.instance, vk_instance.messenger, nil)
+	vk.DestroyInstance(vk_instance.instance, nil)
+}
