@@ -45,3 +45,17 @@ initialLayout = .UNDEFINED , // the image starts out with no meangingful layout 
 if vk.CreateImage(device, &image_info, nil, &image) != .SUCCESS {
 return {}, {}, false
 }
+mem_requirements : vk.MemoryRequirements 
+vk.GetImageMemoryRequirements(device , image , &mem_requirements) 
+
+alloc_info := vk.MemoryAllocateInfo{ 
+sType = .MEMORY_ALLOCATE_INFO , 
+allocationSize = mem_requirements.size , 
+memoryTypeIndex = find_memory_type(physical_device , mem_requirements.memoryTypeBits , properties),
+}
+if vk.AllocateMemory(device, &alloc_info , nil , &image_memory) != .SUCCESS {
+ return {}, {} , false 
+} 
+vk.BindImageMemory(device , image , image_memory, 0 ) 
+return image , image_memory , true 
+} 
