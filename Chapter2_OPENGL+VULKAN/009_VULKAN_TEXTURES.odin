@@ -84,7 +84,7 @@ return sampler , result == .SUCCESS
 
 // copying buffer data into an image - 
 /* same general idea as copy_buffer() from the previous file (a one shot command buffer that runs a copy and waits for it) , except this variant copies
-from a flat buffer into a structured image , so it needs to describe width/height/which part of the image , instead od just a byte count 
+from a flat buffer into a structured image , so it needs to describe width/height/which part of the image , instead of just a byte count */
 
 copy_buffer_to_image :: proc(device: vk.Device , command_pool : vk.CommandPool , graphics_queue: vk.Queue , buffer: vk.Buffer , image : vk.Image , width , height : u32) { 
 cb := begin_single_time_commands(device , command_pool) 
