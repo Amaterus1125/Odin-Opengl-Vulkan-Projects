@@ -57,7 +57,11 @@ memoryTypeIndex = find_memory_type(physical_device , mem_requirements.memoryType
 }
 if vk.AllocateMemory(device, &alloc_info , nil , &image_memory) != .SUCCESS {
  return {}, {} , false 
-} 
-vk.BindImageMemory(device , image , image_memory, 0 ) 
-return image , image_memory , true 
-} 
+
+
+if vk.CreateImage(device, &image_info, nil, &image) != .SUCCESS {
+		return {}, {}, false
+	}
+
+
+
