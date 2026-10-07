@@ -1,4 +1,6 @@
 //common imports and vulkan detection or not thingy
+
+
 package main
 
 import "core:fmt"
