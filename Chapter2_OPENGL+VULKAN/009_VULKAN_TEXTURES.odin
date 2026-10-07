@@ -62,7 +62,44 @@ if vk.CreateImage(device, &image_info, nil, &image) != .SUCCESS {
 		return {}, {}, false
 	}
 // PART 2: THE TEXTURE SAMPLER
-/* 
+/* Having the pixel data sitting in GPU memory isn't enough on its own, a fragment shader does not read raw memory directly , it asks a sampler object for a color at a giveb (u,v) coordinate,
+and the sampler is what decides how to answer that, do we blend neighboring pixels together (filtering) or just grab the closest one ? , what happens if the coordinate goes past the edge of the image (wrapping , clamping etc)? ,
+all of that behaviour lives in this one sampler object completly seperate from the image/pixel data itself */ 
+
+create_texture_sampler :: proc(device: vk.Device) -> (sampler: vk.Sampler, ok : bool) { 
+sampler_info := vk.SamplerCreateInfo{ 
+sType = .SAMPLER_CREATE_INFO, 
+magFilter = .LINEAR , //when the texture is shown bigger than its real resolution, blend neighbouring pixels smoothly 
+minFilter = .LINEAR ,  //same , but for when it's shown smaller 
+mipmapMode = .LINEAR , 
+addressModeU = .REPEAT , // what happens past the edge of the texture , repeat just tiles over and over 
+addressModeV = .REPEAT ,
+addressModeW = .REPEAT , 
+maxAnisotropy = 1 , 
+borderColor = .INT_OPAQUE_BLACK , 
+compareOp = .ALWAYS , 
+} 
+result := vk.CreateSampler(device , &sampler_info , nil , &sampler) 
+return sampler , result == .SUCCESS 
+
+// copying buffer data into an image - 
+/* same general idea as copy_buffer() from the previous file (a one shot command buffer that runs a copy and waits for it) , except this variant copies
+from a flat buffer into a structured image , so it needs to describe width/height/which part of the image , instead od just a byte count 
+
+copy_buffer_to_image :: proc(device: vk.Device , command_pool : vk.CommandPool , graphics_queue: vk.Queue , buffer: vk.Buffer , image : vk.Image , width , height : u32) { 
+cb := begin_single_time_commands(device , command_pool) 
+region := vk.BufferImageCopy{ 
+bufferOffset =0 , 
+bufferRowLength = 0 , // 0 means tightly packed and no extra padding between rows 
+imageSubresource = {aspectMask = {.COLOR} , mipLevel = 0 , baseArraylayer = 0 , layerCount = 1} ,
+imageOffset = {0,0,0} , 
+imageExtent = {width , height , 1 } ,
+} 
+vk.CmdCopyBufferToImage( cb , buffer , image , .TRANSFER_DST_OPTIMAL , 1 , &region) 
+end_single_time_commands(device , command_pool , graphics_queue , cb) 
+} 
+
+//PART 3 - IMAGE LAYPUT TRANSITIONS 
 
 
 
