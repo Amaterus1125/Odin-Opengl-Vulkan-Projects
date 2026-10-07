@@ -1,6 +1,4 @@
 //common imports and vulkan detection or not thingy
-
-
 package main
 
 import "core:fmt"
@@ -16,6 +14,7 @@ vk_check :: proc(result: vk.Result, what: string) {
 		panic("vulkan call failed")
 	}
 }
+
 
 //PART 1 - CREATING AN IMAGE (the texture equivalent of create_buffer) 
 /* A vulkan image is another type of buffer that's designed to store a 1D , 2D or 3D image, so this function is almost odentical in shape to creating create_buffer() from our previous file , 
@@ -63,7 +62,7 @@ if vk.CreateImage(device, &image_info, nil, &image) != .SUCCESS {
 		return {}, {}, false
 	}
 // PART 2: THE TEXTURE SAMPLER
-
+/* 
 
 
 
