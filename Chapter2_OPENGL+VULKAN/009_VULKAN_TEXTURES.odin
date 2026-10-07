@@ -62,6 +62,8 @@ if vk.AllocateMemory(device, &alloc_info , nil , &image_memory) != .SUCCESS {
 if vk.CreateImage(device, &image_info, nil, &image) != .SUCCESS {
 		return {}, {}, false
 	}
+// PART 2: THE TEXTURE SAMPLER
+
 
 
 
