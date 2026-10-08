@@ -179,5 +179,32 @@ destroy_vulkan_texture :: proc(device: vk.Device, texture: ^VulkanTexture) {
 	vk.FreeMemory(device, texture.image_memory, nil)
 }
 
+// PART 4 - DEPTH BUFFER SUPPORT 
+// a depth support needs a specific numeric format the GPU can actually use for depth comparions , but not every gpu supports every depth format equally 
+// these 3 functions ask the gpu "out of these candidate formats , which one do you actually support for this purpose , rather than just hardcoding a guess that might fail in someone else hardware "
+
+find_supported_format :: proc(device: vk.PhysicalDevice, candidates: []vk.Format, tiling: vk.ImageTiling, features: vk.FormatFeatureFlags) -> vk.Format {
+for format in candidates { 
+  props: vk.FormatProperties 
+  vk.GetPHysicalDeviceFormatProperties(device , format , &props )
+  if tiling == .LINEAR && (props.linearTilingFeatures & features) == features { 
+   return format 
+  }
+  if tiling == .OPTIMAL && (props.optimalTilingFeatures & features) == features {
+			return format
+		}
+}
+fmt.println("FAILED TO FIND SUPPORTED FORMAT FOR THE FILE")
+panic("NO SUPPORTED DEPTH FORMAT")
+}
+
+find_depth_format :: proc(device : vk.PhysicalDevice) -> vk.Format { 
+  candidates := []vk.Format{.D32_SFLOAT, .D32_SFLOAT_S8_UINT, .D24_UNORM_S8_UINT}
+	return find_supported_format(device, candidates, .OPTIMAL, {.DEPTH_STENCIL_ATTACHMENT})
+}
+
+has_stencil_component :: proc(format : vk.Format) -> bool {
+  return format == .D32_SFLOAT_S8_UINT || format == .D24_UNORM_S8_UINT
+}
 
 
