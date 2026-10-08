@@ -263,4 +263,4 @@ return image, image_memory, true
 
 }
 
-
+// REUSED FROM PREVIOUS FILES (buffer helpers from 013, image view + instance/device setup from earlier recipes, kept lean/undecorated here since they're already explained in detail in those files)
