@@ -207,4 +207,26 @@ has_stencil_component :: proc(format : vk.Format) -> bool {
   return format == .D32_SFLOAT_S8_UINT || format == .D24_UNORM_S8_UINT
 }
 
+create_depth_resources :: proc(device: vk.Device, physical_device: vk.PhysicalDevice, command_pool: vk.CommandPool, graphics_queue: vk.Queue, width, height: u32) -> (depth: VulkanTexture, ok: bool) {
+	depth_format := find_depth_format(physical_device)
+
+	image, image_memory, created := create_image(device, physical_device, width, height, depth_format, .OPTIMAL, {.DEPTH_STENCIL_ATTACHMENT}, {.DEVICE_LOCAL})
+	if !created { return {}, false }
+	depth.image = image
+	depth.image_memory = image_memory
+
+	view, view_ok := create_image_view(device, depth.image, depth_format, {.DEPTH})
+	if !view_ok { return depth, false }
+	depth.image_view = view
+
+	// a freshly created depth image starts in an UNDEFINED layout and needs to be transitioned before the gpu can actually use it for depth testing  same idea explained in Part 3
+	transition_image_layout(device, command_pool, graphics_queue, depth.image, depth_format, .UNDEFINED, .DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+
+	return depth, true
+}
+
+// PART 5 - LOADING A REAL 2D TEXTURE FROM A FILE - TYING EVERYTHING ABOVE TOGETHER 
+/* this is the complete pipeline , load the pixels off disk with stb_image (library) -> copy them into a cpu visible staging buffer -> create the real gpu-only image ->  transition it so it's ready to receive a copy -> copy the pixels in -> transiton it AGAIN so a shader is allowed to read from it , two transitions beacuse an image layout requirement is different at each stage of this process 
+ */ 
+
 
