@@ -100,6 +100,36 @@ end_single_time_commands(device , command_pool , graphics_queue , cb)
 } 
 
 //PART 3 - IMAGE LAYPUT TRANSITIONS 
-/* on the gpu , it is often faster to store an image 
+/* on the gpu , it is often faster to store an image pixel in a special, rearranged internal order rather than a plain predictable grid, the gpu can access that rearranged layout more 
+ effiiently depending on what's its currently being used for (being written to , being read from in a shader , being presented on the screen) ,vulkan calls this arrangement the image "layout" and vulkan makes 
+ us explicitly declare about that we are about to switch from usinf this image as a copy destination to using it as something a shader reads from , this declaration is called a "pipeline barrier" and doing one is called a "layout transition"
+
+ if we skip this , our validation layer will warn us , so doing these transitions correctly is also a good practice for avoiding mysterious bugs on other people gpu's later */ 
+
+transition_image_layout_cmd :: proc(command_buffer: vk.CommandBuffer, image : vk.Image , format : vk.Format , old_layout , new_layout : vk.ImageLayout , layer_count , mip_levels: u32){
+  barrier := vk.ImageMemoryBarrier{
+    sType  = .IMAGE_MEMORY_BARRIER , 
+    oldLyout = old_layout , 
+    newLayout = new_layout , 
+    srcQueueFamilyIndex = vk.QUEUE_FAMILY_IGNORED , // we are not transffering ownership between different queue families , just changing layout 
+    dstQueueFamilyIndex = vk.QUEUE_FAMILY_IGNORED , 
+    image = image , 
+    subresourceRange = { aspectMask  = {.COLOR} , baseMipLevel = 0 , levelCount = 1 , baseArraylayer = 0 , layerCount = 1},
+  }
+
+  //a depth buffer needs a different "aspect mask" than a normal color image , we are reading . writing its depth balues and not rgba colors 
+  if new_layout == .DEPTH_STENCIL_ATTACHMENT_OPTIMAL { 
+  barrier.subresourceRange.aspectMask = {.DEPTH } 
+  if has_stencil_component(format) {
+    barrier.subresourceRange.aspectMask |= {.STENCIL}
+  }
+  } else {
+    barrier.subresourceRange.aspectMask = {.COLOR}
+  }
+
+  source_stage , destination_stage : vk.PipelineStageFlags 
+
+  
+}
 
 
