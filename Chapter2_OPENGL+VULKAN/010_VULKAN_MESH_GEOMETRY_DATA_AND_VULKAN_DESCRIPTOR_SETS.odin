@@ -1,4 +1,6 @@
 // will be using the rubber_duck asset here 
+
+
 // the normal imports above every file 
 package main
 
@@ -38,4 +40,21 @@ resolve_obj_index :: proc(i , count : int) -> int {
 if i >0 {return i -1 }
 if i < 0 {return count +1 }
 return -1 
+}
+
+load_obj :: proc(filename : string) -> (vertices : [dynamic]VertexData , indices: [dynamic]u32 , ok : bool ){
+
+// note - in recent odin versions , this returns an error value and not a bool 
+file_data , read_err := os.read_entire_file(filename , context.allocator) 
+if read_err != nil{return {} ,{} , false}
+defer delete(file_data)
+positions : [dynamic][3]f32 
+texcoords : [dynamic][2]f32 
+defer delete(positions)
+defer delete(texcoords)
+
+// an .obj face corner is a (position index , texcoord index ) pair , two corners with the same pair are the same vertex , so we remember 
+// which pairs we have already emitted , that's what makes the mesh indexed instead of three brand new vertices every triangle 
+unique : map[[2]int]u32 
+defer delete(unique)
 }
