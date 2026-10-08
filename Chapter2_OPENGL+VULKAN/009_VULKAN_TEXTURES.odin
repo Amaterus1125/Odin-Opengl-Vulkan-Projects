@@ -1,4 +1,12 @@
+// WE WILL BE USING ASSETS - rubber_duck folder here 
+
+
+
+
+
 //common imports and vulkan detection or not thingy
+
+
 package main
 
 import "core:fmt"
