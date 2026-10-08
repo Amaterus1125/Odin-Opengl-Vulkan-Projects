@@ -129,7 +129,33 @@ transition_image_layout_cmd :: proc(command_buffer: vk.CommandBuffer, image : vk
 
   source_stage , destination_stage : vk.PipelineStageFlags 
 
-  
+ 
+  /*each pf the 3 cases below answers the same 2 questions for specific situations , "what kinf of memory access was happening before this transition" (srcAccessMask) and 
+   * "what kind of access is about to happen after it " (dstAccessMask) , this is what lets the gpu correctly order its own internal work around the change */ 
+
+  if old_layout == .UNDEFINED && new_layout == .TRANSFER_DST_OPTIMAL { 
+  // case - a brand new image , about to be written into via a copy (like right after create_imahe and before copy_buffer_to_image)
+  barrier.srcAccessMask= { }
+  barrier.dstAccessMask = {.TRANSFER_WRITE}
+  source_stage = {.TOP_OF_PIPE}
+  destination_stage = {.TRANSFER}
+  } else if old_layout == .TRANSFER_DST_OPTIMAL && new_layout == .SHADER_READ_ONLY_OPTIMAL { 
+  // case: we just finished copying pixel data in, and now a
+		// fragment shader wants to actually sample from this texture
+		barrier.srcAccessMask = {.TRANSFER_WRITE}
+		barrier.dstAccessMask = {.SHADER_READ}
+		source_stage = {.TRANSFER}
+		destination_stage = {.FRAGMENT_SHADER}
+	} else if old_layout == .UNDEFINED && new_layout == .DEPTH_STENCIL_ATTACHMENT_OPTIMAL {
+		// case: a brand new depth buffer, about to be used for depth testing
+		barrier.srcAccessMask = {}
+		barrier.dstAccessMask = {.DEPTH_STENCIL_ATTACHMENT_READ, .DEPTH_STENCIL_ATTACHMENT_WRITE}
+		source_stage = {.TOP_OF_PIPE}
+		destination_stage = {.EARLY_FRAGMENT_TESTS}
+	}
+  // this is the actual command that tells the gpu to pause here and wait for everything in source_stage to finish , then let destination_stage proceed , a pipeline barrier is genuinly hust a synchronization checkpoint plus a layout change bundles together 
+  vk.CmdPipelineBarrier(command_buffer , source_stage, destination_stage, {} , 0 , nil , 0 , nil , 1 , &barrier)
+
 }
 
 
