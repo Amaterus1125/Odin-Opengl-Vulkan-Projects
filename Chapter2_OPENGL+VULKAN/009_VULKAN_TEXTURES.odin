@@ -264,3 +264,55 @@ return image, image_memory, true
 }
 
 // REUSED FROM PREVIOUS FILES (buffer helpers from 013, image view + instance/device setup from earlier recipes, kept lean/undecorated here since they're already explained in detail in those files)
+find_memory_type :: proc(physical_device: vk.PhysicalDevice, type_filter: u32, properties: vk.MemoryPropertyFlags) -> u32 {
+	mem_properties: vk.PhysicalDeviceMemoryProperties
+	vk.GetPhysicalDeviceMemoryProperties(physical_device, &mem_properties)
+	for i in 0 ..< mem_properties.memoryTypeCount {
+		bit := u32(1) << i
+		if (type_filter & bit) != 0 && (mem_properties.memoryTypes[i].propertyFlags & properties == properties) {
+			return i
+		}
+	}
+	return 0xFFFFFFFF
+}
+
+create_buffer :: proc(device: vk.Device, physical_device: vk.PhysicalDevice, size: vk.DeviceSize, usage: vk.BufferUsageFlags, properties: vk.MemoryPropertyFlags) -> (buffer: vk.Buffer, buffer_memory: vk.DeviceMemory, ok: bool) {
+	buffer_info := vk.BufferCreateInfo{sType = .BUFFER_CREATE_INFO, size = size, usage = usage, sharingMode = .EXCLUSIVE}
+	if vk.CreateBuffer(device, &buffer_info, nil, &buffer) != .SUCCESS { return {}, {}, false }
+	mem_requirements: vk.MemoryRequirements
+	vk.GetBufferMemoryRequirements(device, buffer, &mem_requirements)
+	alloc_info := vk.MemoryAllocateInfo{sType = .MEMORY_ALLOCATE_INFO, allocationSize = mem_requirements.size, memoryTypeIndex = find_memory_type(physical_device, mem_requirements.memoryTypeBits, properties)}
+	if vk.AllocateMemory(device, &alloc_info, nil, &buffer_memory) != .SUCCESS { return {}, {}, false }
+	vk.BindBufferMemory(device, buffer, buffer_memory, 0)
+	return buffer, buffer_memory, true
+}
+
+destroy_buffer :: proc(device: vk.Device, buffer: vk.Buffer, buffer_memory: vk.DeviceMemory) {
+	vk.DestroyBuffer(device, buffer, nil)
+	vk.FreeMemory(device, buffer_memory, nil)
+}
+
+begin_single_time_commands :: proc(device: vk.Device, command_pool: vk.CommandPool) -> vk.CommandBuffer {
+	alloc_info := vk.CommandBufferAllocateInfo{sType = .COMMAND_BUFFER_ALLOCATE_INFO, commandPool = command_pool, level = .PRIMARY, commandBufferCount = 1}
+	command_buffer: vk.CommandBuffer
+	vk.AllocateCommandBuffers(device, &alloc_info, &command_buffer)
+	begin_info := vk.CommandBufferBeginInfo{sType = .COMMAND_BUFFER_BEGIN_INFO, flags = {.ONE_TIME_SUBMIT}}
+	vk.BeginCommandBuffer(command_buffer, &begin_info)
+	return command_buffer
+}
+
+end_single_time_commands :: proc(device: vk.Device, command_pool: vk.CommandPool, graphics_queue: vk.Queue, command_buffer: vk.CommandBuffer) {
+	cb := command_buffer
+	vk.EndCommandBuffer(cb)
+	submit_info := vk.SubmitInfo{sType = .SUBMIT_INFO, commandBufferCount = 1, pCommandBuffers = &cb}
+	vk.QueueSubmit(graphics_queue, 1, &submit_info, {})
+	vk.QueueWaitIdle(graphics_queue)
+	vk.FreeCommandBuffers(device, command_pool, 1, &cb)
+}
+
+create_image_view :: proc(device: vk.Device, image: vk.Image, format: vk.Format, aspect_flags: vk.ImageAspectFlags) -> (vk.ImageView, bool) {
+	view_info := vk.ImageViewCreateInfo{sType = .IMAGE_VIEW_CREATE_INFO, image = image, viewType = .D2, format = format, subresourceRange = {aspectMask = aspect_flags, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1}}
+	view: vk.ImageView
+	result := vk.CreateImageView(device, &view_info, nil, &view)
+	return view, result == .SUCCESS
+}
