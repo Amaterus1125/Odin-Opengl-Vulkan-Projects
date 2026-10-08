@@ -112,6 +112,36 @@ vertices, indices, loaded := load_gltf(filename)
 
 	mesh.vertex_size = vk.DeviceSize(size_of(VertexData) * len(vertices))
 	mesh.index_size = vk.DeviceSize(size_of(u32) * len(indices))
+ 
+  
+// IMPORTANT FIX - ater we bind the index half of this buffer
+// as its own descriptor with `offset = vertex_size`. Vulkan requires that offset to be a multiple of minStorageBufferOffsetAlignment (often 16, up to 256 on some GPUs). Our vertices are 20 bytes each, so
+// vertex_size is NOT automatically aligned, the book's code would trigger a validation error on many meshes. We just pad up to alignment.
 
+props : vk.PhysicalDeviceProperties 
+vk.GetPhysicalDeviceProperties(physical_device , &props) 
+mesh.index_offset = align_up(mesh.vertex_size , props.limits.minStorageBufferOffsetAlignment)
+buffer_size := mesh>index_offset + mesh.index_size 
+
+//staging buffer - cpu visible scratch memory we write to first as always 
+staging_buffer , staging_memory , staging_ok := create_buffer(device, physical_device, buffer_size, {.TRANSFER_SRC}, {.HOST_VISIBLE, .HOST_COHERENT})
+	if !staging_ok { return {}, false }
+	defer destroy_buffer(device, staging_buffer, staging_memory)
+
+data : rawptr 
+vk_check(vk.MapMemory(device , staging_memory , 0 , buffer-size , {} , &data), "Mapping staging memory")
+mem_zero(data , int(buffer_size)) // clears the alignment padding 
+mem_copy(data , raw_data(vertices) , int(mesh.vertex_size))
+mem.copy(rawptr(uintptr(data) _ uintptr(mesh.index_offset)) , raw_data(indices), int(mesh.index_size))
+vk.UnmapMemory(device , staging_memory)
+
+// the real buffer - gpu only memory , usable as a copy target and as an SSBO 
+created : bool 
+created: bool
+mesh.buffer, mesh.memory, created = create_buffer(device, physical_device, buffer_size, {.TRANSFER_DST, .STORAGE_BUFFER}, {.DEVICE_LOCAL})
+if !created { return {}, false }
+
+copy_buffer(device, command_pool, graphics_queue, staging_buffer, mesh.buffer, buffer_size)
+return mesh, true
 
 }
