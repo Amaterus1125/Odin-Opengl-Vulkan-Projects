@@ -145,3 +145,6 @@ copy_buffer(device, command_pool, graphics_queue, staging_buffer, mesh.buffer, b
 return mesh, true
 
 }
+
+// PART 3 - VULKAN DESCRIPTOR SETS 
+/* 
