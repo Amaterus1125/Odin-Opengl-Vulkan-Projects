@@ -32,29 +32,91 @@ VertexData :: struct {
  tc: [2]f32 ,
 }
 
-/* size_of(VertexData) == 20 bytes , tightly packed , that matches the struct VertexData { float x , y, z ; float u , v} in the vertex shader 
- * because SSBO's use std430 layout , which does not pad this struct , .obj indices are 1- based , and negative numbers count backwards from the end of the list so far ,
- * this turns either form into 0-based index (or -1 is it's missing or invalid) */ 
+// will be using the rubber_duck asset here 
 
-resolve_obj_index :: proc(i , count : int) -> int { 
-if i >0 {return i -1 }
-if i < 0 {return count +1 }
-return -1 
+
+// the normal imports above every file 
+package main
+
+import "core:fmt"
+import "core:mem"
+import "core:os"
+import "core:strconv"
+import "core:strings"
+
+import "vendor:glfw"
+import vk "vendor:vulkan"
+import stbi "vendor:stb/image"
+
+vk_check :: proc(result: vk.Result, what: string) {
+	if result != .SUCCESS {
+		fmt.println("VULKAN ERROR during", what, "-", result)
+		panic("vulkan call failed")
+	}
 }
 
-load_obj :: proc(filename : string) -> (vertices : [dynamic]VertexData , indices: [dynamic]u32 , ok : bool ){
+// PART 1 - LOADING MESH GEOMETRY  
+/* As we should be using Assimp here for C++ , as odin vendor does not have Assimp , we would be using something else - 
+ * SO instead of using Assimp , we parse a plain wavefront .obj file ourselves , it's a simple text format and this keeps the project free of any extra C library 
+ * We will export our duck model as .obj (BLENDER - FILE -> EXPORT -> Wavefront) and point main() at it 
+ * Output has the exact same shape the book produces, a list of vertices (position + texture coordinate) and a list of u32 indices  */ 
 
-// note - in recent odin versions , this returns an error value and not a bool 
-file_data , read_err := os.read_entire_file(filename , context.allocator) 
-if read_err != nil{return {} ,{} , false}
-defer delete(file_data)
-positions : [dynamic][3]f32 
-texcoords : [dynamic][2]f32 
+VertexData :: struct { 
+ pos : [3]f32 , 
+ tc: [2]f32 ,
+}
+
+/*size_of(VertexData) == 20 bytes, tightly packed. That matches the `struct VertexData { float x, y, z; float u, v; }` in the vertex shader, because SSBOs use std430 layout, which doesn't pad this struct.
+ Like the book, we only take the first primitive of the first mesh (mesh->mMeshes[0]). glTF stores each attribute (position, texcoord, ...) in an "accessor"; cgltf can unpack any accessor into a plain float array.*/ 
+
+load_gltf :: proc(filename: cstring) -> (vertices: [dynamic]VertexData, indices: [dynamic]u32, ok: bool) {
+	options: cgltf.options
+	data, result := cgltf.parse_file(options, filename)
+	if result != .success { return {}, {}, false }
+	defer cgltf.free(data)
+
+// parse_file only reads the .gltf json, this also loads Duck0.bin (the raw vertex data it points to, looked up next to the .gltf file)
+if cgltf.load_buffers(options, data, filename) != .success { return {}, {}, false }
+
+if len(data.meshes) == 0 || len(data.meshes[0].primitives) == 0 { return {}, {}, false }
+prim := data.meshes[0].primitives[0]
+if prim.type != .triangles { return {}, {}, false }
+
+pos_acc, tc_acc: ^cgltf.accessor
+for attr in prim.attributes {
+if attr.type == .position && attr.index == 0 { pos_acc = attr.data }
+if attr.type == .texcoord && attr.index == 0 { tc_acc = attr.data }
+}
+if pos_acc == nil { return {}, {}, false }
+
+count := int(pos_acc.count)
+positions := make([]f32, count * 3)
 defer delete(positions)
-defer delete(texcoords)
+_ = cgltf.accessor_unpack_floats(pos_acc, raw_data(positions), uint(count * 3))
 
-// an .obj face corner is a (position index , texcoord index ) pair , two corners with the same pair are the same vertex , so we remember 
-// which pairs we have already emitted , that's what makes the mesh indexed instead of three brand new vertices every triangle 
-unique : map[[2]int]u32 
-defer delete(unique)
+texcoords: []f32
+defer delete(texcoords)
+if tc_acc != nil && int(tc_acc.count) == count {
+	texcoords = make([]f32, count * 2)
+	_ = cgltf.accessor_unpack_floats(tc_acc, raw_data(texcoords), uint(count * 2))
 }
+
+for i in 0 ..< count {
+tc: [2]f32
+if texcoords != nil { tc = {texcoords[i * 2], texcoords[i * 2 + 1]} }
+// same y/z swap as required: vec3(v.x, v.z, v.y)
+	append(&vertices, VertexData{pos = {positions[i * 3], positions[i * 3 + 2], positions[i * 3 + 1]}, tc = tc})
+}
+
+if prim.indices != nil {
+n := int(prim.indices.count)
+resize(&indices, n)
+// the file may store indices as u8/u16/u32, this converts to u32
+_ = cgltf.accessor_unpack_indices(prim.indices, raw_data(indices), size_of(u32), uint(n))
+} else {
+for i in 0 ..< count { append(&indices, u32(i)) }
+}
+return vertices, indices, len(vertices) > 0 && len(indices) > 0
+}
+
+
