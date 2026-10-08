@@ -97,4 +97,21 @@ MeshBuffer :: struct {
   index_size : vk.DeviceSize , // bytes of index data
 }
 
-align_up 
+align_up :: proc(value , alignment: vk.DeviceSize) -> vk.DeviceSize { 
+return (value + alignment - 1) / alignment * alignment 
+}
+
+create_textured_vertex_buffer :: proc(device : vk.Device , physical_device : vk.PhysicalDevice , command_pool : vk.CommandPool ,graphics_queue: vk.Queue, filename: cstring) -> (mesh: MeshBuffer, ok: bool) {
+vertices, indices, loaded := load_gltf(filename)
+	if !loaded {
+		fmt.println("Unable to load", filename)
+		return {}, false
+	}
+	defer delete(vertices)
+	defer delete(indices)
+
+	mesh.vertex_size = vk.DeviceSize(size_of(VertexData) * len(vertices))
+	mesh.index_size = vk.DeviceSize(size_of(u32) * len(indices))
+
+
+}
