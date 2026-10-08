@@ -358,3 +358,67 @@ create_device :: proc(physical_device: vk.PhysicalDevice, device_features: vk.Ph
 	result := vk.CreateDevice(physical_device, &create_info, nil, &device)
 	return device, result
 }
+
+
+// MAIN - loads a real texture file end to end, plus a depth buffer
+
+
+main :: proc() {
+	glfw.Init()
+	defer glfw.Terminate()
+	glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
+
+	window := glfw.CreateWindow(800, 600, "Vulkan Textures", nil, nil)
+	defer glfw.DestroyWindow(window)
+	vk.load_proc_addresses(rawptr(glfw.GetInstanceProcAddress))
+
+	instance := create_instance()
+	defer vk.DestroyInstance(instance, nil)
+
+	surface: vk.SurfaceKHR
+	vk_check(glfw.CreateWindowSurface(instance, window, nil, &surface), "creating window surface")
+	defer vk.DestroySurfaceKHR(instance, surface, nil)
+
+	physical_device, found := find_suitable_physical_device(instance, proc(device: vk.PhysicalDevice) -> bool {
+		family_count: u32
+		vk.GetPhysicalDeviceQueueFamilyProperties(device, &family_count, nil)
+		return family_count > 0
+	})
+	if !found { fmt.println("no suitable gpu found"); return }
+
+	graphics_family := find_queue_families(physical_device, {.GRAPHICS})
+	device_features: vk.PhysicalDeviceFeatures
+	device, dev_result := create_device(physical_device, device_features, graphics_family)
+	vk_check(dev_result, "creating logical device")
+	defer vk.DestroyDevice(device, nil)
+	vk.load_proc_addresses(device)
+
+	graphics_queue: vk.Queue
+	vk.GetDeviceQueue(device, graphics_family, 0, &graphics_queue)
+
+	pool_info := vk.CommandPoolCreateInfo{sType = .COMMAND_POOL_CREATE_INFO, queueFamilyIndex = graphics_family}
+	command_pool: vk.CommandPool
+	vk_check(vk.CreateCommandPool(device, &pool_info, nil, &command_pool), "creating command pool")
+	defer vk.DestroyCommandPool(device, command_pool, nil)
+
+	//  EDIT THIS PATH to point at a real image on your system 
+	texture_image, texture_memory, tex_ok := create_texture_image(device, physical_device, command_pool, graphics_queue, "rubber_duck/textures/Duck_baseColor.png")
+	if !tex_ok { fmt.println("failed to load texture image"); return }
+	defer { vk.DestroyImage(device, texture_image, nil); vk.FreeMemory(device, texture_memory, nil) }
+
+	texture_view, view_ok := create_image_view(device, texture_image, .R8G8B8A8_UNORM, {.COLOR})
+	if !view_ok { fmt.println("failed to create texture image view"); return }
+	defer vk.DestroyImageView(device, texture_view, nil)
+
+	sampler, sampler_ok := create_texture_sampler(device)
+	if !sampler_ok { fmt.println("failed to create texture sampler"); return }
+	defer vk.DestroySampler(device, sampler, nil)
+
+	fmt.println("texture loaded, image view created, and sampler ready!")
+
+	depth, depth_ok := create_depth_resources(device, physical_device, command_pool, graphics_queue, 800, 600)
+	if !depth_ok { fmt.println("failed to create depth resources"); return }
+	defer destroy_vulkan_texture(device, &depth)
+
+	fmt.println("depth buffer created successfully!")
+}
