@@ -158,4 +158,26 @@ transition_image_layout_cmd :: proc(command_buffer: vk.CommandBuffer, image : vk
 
 }
 
+transition_image_layout :: proc(device : vk.Device , command_pool : vk.CommandPoll,graphics_queue: vk.Queue, image: vk.Image, format: vk.Format, old_layout, new_layout: vk.ImageLayout) { 
+ cb := begin_single_time_commands(device, command_pool)
+ transition_image_layout_cmd(cb , image , format , old_layout , new_layout , 1 ,1 )
+ end_single_time_commands(device , command_pool , graphics_queue , cb )
+}
+
+// THE VULKAN TEXTURE bundle 
+// a usable texture is really 3 seperate vulkan objects working together , the raw image data , the memory backing it , and a view describing how to read it 
+// and bundling all 3 into one struct means we only need to pass around (and clean up )  one thing from here on 
+VulkanTexture :: struct { 
+  image : vk.Image , 
+  image_memory : vk.DeviceMemory , 
+  image_view : vk.ImageView ,
+}
+
+destroy_vulkan_texture :: proc(device: vk.Device, texture: ^VulkanTexture) {
+	vk.DestroyImageView(device, texture.image_view, nil)
+	vk.DestroyImage(device, texture.image, nil)
+	vk.FreeMemory(device, texture.image_memory, nil)
+}
+
+
 
