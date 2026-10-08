@@ -226,7 +226,41 @@ create_depth_resources :: proc(device: vk.Device, physical_device: vk.PhysicalDe
 }
 
 // PART 5 - LOADING A REAL 2D TEXTURE FROM A FILE - TYING EVERYTHING ABOVE TOGETHER 
-/* this is the complete pipeline , load the pixels off disk with stb_image (library) -> copy them into a cpu visible staging buffer -> create the real gpu-only image ->  transition it so it's ready to receive a copy -> copy the pixels in -> transiton it AGAIN so a shader is allowed to read from it , two transitions beacuse an image layout requirement is different at each stage of this process 
+/* this is the complete pipeline , load the pixels off disk with stb_image (library) -> copy them into a cpu visible staging buffer -> create the real gpu-only image 
+ * -> transition it so it's ready to receive a copy -> copy the pixels in -> transiton it AGAIN so a shader is allowed to read from it , two transitions beacuse an image layout requirement is different at each stage of this process 
  */ 
+
+create_texture_image ::proc(device: vk.Device, physical_device: vk.PhysicalDevice, command_pool: vk.CommandPool, graphics_queue: vk.Queue, filename: cstring) -> (image: vk.Image, image_memory: vk.DeviceMemory, ok: bool) {
+  tex_width , tex_height , tex_channels : i32 
+  pixels := stbi.load(filename , &tex_width , &tex_height , &tex_channels , 4) // force 4 channels rgba regardless of the source file actual channel count , so our code below can assume a fixed layout 
+  if pixels == nil {
+		fmt.println("Failed to load [", filename, "] texture")
+		return {}, {}, false
+	}
+	defer stbi.image_free(pixels)
+image_size := vk.DeviceSize(tex_width * tex_height * 4)
+
+// a staginf buffer is necessary here for the same reason as out earlier buffer recipe , the gpu local memory an imae ultimately wants to live in usuallt can't be written to directly from cpu, so we first write into plain cpu visible memory , then let the gpu copy it over on it's own 
+staging_buffer , staging_memory , staging_ok := create_buffer(device , physical_device , image_size , {.TRANSFER_SRC} , {.HOST_VISIBLE , .HOST_COHERENT})
+if !staging_ok { return {}, {}, false }
+defer destroy_buffer(device, staging_buffer, staging_memory)
+data : rawptr 
+vk.MapMemory(deive , staging_memory , 0 , image_size , {} , &data)
+mem.copy(data , pixels , int(image_size))
+vk.UnmapMemory(device , staging_memory)
+created : bool 
+image, image_memory, created = create_image(device, physical_device, u32(tex_width), u32(tex_height), .R8G8B8A8_UNORM, .OPTIMAL, {.TRANSFER_DST, .SAMPLED}, {.DEVICE_LOCAL})
+if !created { return {}, {}, false }
+
+// step 1 - get the fresh image ready to receive a copy 
+transition_image_layout(device, command_pool, graphics_queue, image, .R8G8B8A8_UNORM, .UNDEFINED, .TRANSFER_DST_OPTIMAL)
+// step 2: actually copy the pixel data in
+copy_buffer_to_image(device, command_pool, graphics_queue, staging_buffer, image, u32(tex_width), u32(tex_height))
+// step 3: get the now-filled image ready to be READ by a shader
+transition_image_layout(device, command_pool, graphics_queue, image, .R8G8B8A8_UNORM, .TRANSFER_DST_OPTIMAL, .SHADER_READ_ONLY_OPTIMAL)
+
+return image, image_memory, true
+
+}
 
 
