@@ -190,3 +190,12 @@ append(&pool_sizes , vk.DescriptorPoolSize{type = .STORAGE_BUFFER , descriptorCo
 if sampler_count > 0 { 
 append(&pool_sizes , vk.DescriptorPoolSize{type = .COMBINED_IMAGE_SAMPLER , descriptorCount = image_count * sampler_count } ) 
 }
+pool_info := vk.DescriptorPoolCreateInfo{
+sType    = .DESCRIPTOR_POOL_CREATE_INFO,
+maxSets   = image_count,
+poolSizeCount = u32(len(pool_sizes)),
+pPoolSizes    = raw_data(pool_sizes) if len(pool_sizes) > 0 else nil,
+}
+result := vk.CreateDescriptorPool(device, &pool_info, nil, &pool)
+return pool, result == .SUCCESS
+}
