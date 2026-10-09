@@ -184,4 +184,9 @@ defer delete(pool_sizes)
 if uniform_buffer_count > 0 {
  append(&pool_sizes , vk.DescriptorPoolSize{type = .UNIFORM_BUFFER , descriptorCount = image_count * uniform_buffer_count} ) 
 } 
-
+if storage_buffer_count > 0 {
+append(&pool_sizes , vk.DescriptorPoolSize{type = .STORAGE_BUFFER , descriptorCount = image_count * storage_buffer_count } ) 
+} 
+if sampler_count > 0 { 
+append(&pool_sizes , vk.DescriptorPoolSize{type = .COMBINED_IMAGE_SAMPLER , descriptorCount = image_count * sampler_count } ) 
+}
