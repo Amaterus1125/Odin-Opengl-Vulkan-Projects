@@ -199,3 +199,7 @@ pPoolSizes    = raw_data(pool_sizes) if len(pool_sizes) > 0 else nil,
 result := vk.CreateDescriptorPool(device, &pool_info, nil, &pool)
 return pool, result == .SUCCESS
 }
+// helper - one entry of the layout - binding N in this kind of resource and these shaders may touch 
+descriptor_set_layout_binding :: proc(binding : u32 , kind : vk.DescriptorType , stages : vk.ShaderStageFlags) -> vk.DescriptorSetLayoutBinding { 
+return {binding = binding, descriptorType = kind, descriptorCount = 1, stageFlags = stages}
+}
