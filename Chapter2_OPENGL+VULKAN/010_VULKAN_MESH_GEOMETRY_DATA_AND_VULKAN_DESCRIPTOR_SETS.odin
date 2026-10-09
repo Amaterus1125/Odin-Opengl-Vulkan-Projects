@@ -147,4 +147,11 @@ return mesh, true
 }
 
 // PART 3 - VULKAN DESCRIPTOR SETS 
-/* 
+/* a discriptor is a handle/pointer to one resource ( a buffer or a texture) , a discriptor set is a bundle of them , and it's the only way 
+shaders can get a buffers and textures in vulkan, it has 4 steps - 
+step 1 - create a pool - where descriptor sets gets allocated from 
+step 2 - create a layout - describe what's in the set , which binding is what type , visible to which shader stage 
+step 3 - allocate sets - one per swapchain image , all using that layout 
+step 4 - update the sets - actually point each binding at a real buffer/texture */ 
+
+
