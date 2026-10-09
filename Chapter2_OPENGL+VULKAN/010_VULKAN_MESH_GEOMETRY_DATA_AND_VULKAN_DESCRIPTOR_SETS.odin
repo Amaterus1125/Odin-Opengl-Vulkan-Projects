@@ -175,4 +175,13 @@ descriptor_set_layout : vk.DescriptorSetLayout ,
 descriptor_sets ; [dynamic]vk.DescriptorSet , 
 } 
 
+// step 1 - the pool must hold enough of each descriptor type for every set we will allocate , we make one set per swapchain image , so every count is multiplied by image_count 
+
+create_descriptor_pool :: proc( device : vk.Device , image_count , uniform_buffer_count , storage_buffer_count , sampler_count: u32 ) -> (pool: vk.DescriptorPool , ok: bool) {
+pool_sizes : [dynamic]vk,DescriptorPoolSize 
+defer delete(pool_sizes) 
+
+if uniform_buffer_count > 0 {
+ append(&pool_sizes , vk.DescriptorPoolSize{type = .UNIFORM_BUFFER , descriptorCount = image_count * uniform_buffer_count} ) 
+} 
 
