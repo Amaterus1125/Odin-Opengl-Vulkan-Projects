@@ -158,4 +158,21 @@ step 2 - create a layout - describe what's in the set , which binding is what ty
 step 3 - allocate sets - one per swapchain image , all using that layout 
 step 4 - update the sets - actually point each binding at a real buffer/texture */ 
 
+IMAGE_COUNT :: 3 // pretend swapchain image count ( no real swapchain in this file yet)
+
+UniformBuffer :: struct { 
+mvp : matrix[4,4]f32 ,
+}
+
+VulkanState :: struct { 
+uniform_buffers : [dynamic]vk.Buffer ,
+uniform_buffers_memory: [dynamic]vk.DeviceMemory , 
+mesh: MeshBuffer , 
+texture_view : vk.ImageView ,
+texture_sampler : vk.Sampler , 
+descriptor_pool : vk.DescriptorPool , 
+descriptor_set_layout : vk.DescriptorSetLayout , 
+descriptor_sets ; [dynamic]vk.DescriptorSet , 
+} 
+
 
