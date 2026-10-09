@@ -88,63 +88,67 @@ return vertices, indices, len(vertices) > 0 && len(indices) > 0
 // PART 2 - UPLOADING THE MESH INTO ONE SHADER STORAGE BUFFER (SSBO)
 /* programmable vertex pulling (PVP) - vertices and indices live together in a single GPU buffer , the vertex shader reads them itself 
  * from two storage buffer bindings (bindings 1 and 2) , each pinpointing at a different slice of this one buffer */ 
-
-MeshBuffer :: struct { 
-  buffer : vk.Buffer , 
-  memory : vk.DeviceMemory , 
-  vertex_size : vk.DeviceSize  , //bytes of vertex data , starts at offset 0 
-  index_offset : vk.DeviceSize , // where the index data starts 
-  index_size : vk.DeviceSize , // bytes of index data
+MeshBuffer :: struct {
+	buffer:       vk.Buffer,
+	memory:       vk.DeviceMemory,
+	vertex_size:  vk.DeviceSize, // bytes of vertex data, starts at offset 0
+	index_offset: vk.DeviceSize, // where the index data starts
+	index_size:   vk.DeviceSize, // bytes of index data
+}
+align_up :: proc(value, alignment: vk.DeviceSize) -> vk.DeviceSize {
+	return (value + alignment - 1) / alignment * alignment
 }
 
-align_up :: proc(value , alignment: vk.DeviceSize) -> vk.DeviceSize { 
-return (value + alignment - 1) / alignment * alignment 
-}
-
-create_textured_vertex_buffer :: proc(device : vk.Device , physical_device : vk.PhysicalDevice , command_pool : vk.CommandPool ,graphics_queue: vk.Queue, filename: cstring) -> (mesh: MeshBuffer, ok: bool) {
+create_textured_vertex_buffer :: proc(device: vk.Device, physical_device: vk.PhysicalDevice, command_pool: vk.CommandPool, graphics_queue: vk.Queue, filename: cstring) -> (mesh: MeshBuffer, ok: bool) {
 vertices, indices, loaded := load_gltf(filename)
-	if !loaded {
-		fmt.println("Unable to load", filename)
-		return {}, false
-	}
-	defer delete(vertices)
-	defer delete(indices)
+if !loaded {
+	fmt.println("Unable to load", filename)
+	return {}, false
+}
+defer delete(vertices)
+defer delete(indices)
 
-	mesh.vertex_size = vk.DeviceSize(size_of(VertexData) * len(vertices))
-	mesh.index_size = vk.DeviceSize(size_of(u32) * len(indices))
- 
-  
-// IMPORTANT FIX - ater we bind the index half of this buffer
+mesh.vertex_size = vk.DeviceSize(size_of(VertexData) * len(vertices))
+mesh.index_size = vk.DeviceSize(size_of(u32) * len(indices))
+
+// IMPORTANT FIX - later we bind the index half of this buffer
 // as its own descriptor with `offset = vertex_size`. Vulkan requires that offset to be a multiple of minStorageBufferOffsetAlignment (often 16, up to 256 on some GPUs). Our vertices are 20 bytes each, so
 // vertex_size is NOT automatically aligned, the book's code would trigger a validation error on many meshes. We just pad up to alignment.
 
-props : vk.PhysicalDeviceProperties 
-vk.GetPhysicalDeviceProperties(physical_device , &props) 
-mesh.index_offset = align_up(mesh.vertex_size , props.limits.minStorageBufferOffsetAlignment)
-buffer_size := mesh>index_offset + mesh.index_size 
+props: vk.PhysicalDeviceProperties
+vk.GetPhysicalDeviceProperties(physical_device, &props)
+mesh.index_offset = align_up(mesh.vertex_size, props.limits.minStorageBufferOffsetAlignment)
 
-//staging buffer - cpu visible scratch memory we write to first as always 
-staging_buffer , staging_memory , staging_ok := create_buffer(device, physical_device, buffer_size, {.TRANSFER_SRC}, {.HOST_VISIBLE, .HOST_COHERENT})
-	if !staging_ok { return {}, false }
-	defer destroy_buffer(device, staging_buffer, staging_memory)
+buffer_size := mesh.index_offset + mesh.index_size
 
-data : rawptr 
-vk_check(vk.MapMemory(device , staging_memory , 0 , buffer-size , {} , &data), "Mapping staging memory")
-mem_zero(data , int(buffer_size)) // clears the alignment padding 
-mem_copy(data , raw_data(vertices) , int(mesh.vertex_size))
-mem.copy(rawptr(uintptr(data) _ uintptr(mesh.index_offset)) , raw_data(indices), int(mesh.index_size))
-vk.UnmapMemory(device , staging_memory)
+// staging buffer: cpu-visible scratch memory we write into first
+staging_buffer, staging_memory, staging_ok := create_buffer(device, physical_device, buffer_size, {.TRANSFER_SRC}, {.HOST_VISIBLE, .HOST_COHERENT})
+if !staging_ok { return {}, false }
+defer destroy_buffer(device, staging_buffer, staging_memory)
 
-// the real buffer - gpu only memory , usable as a copy target and as an SSBO 
-created : bool 
+data: rawptr
+vk_check(vk.MapMemory(device, staging_memory, 0, buffer_size, {}, &data), "mapping staging memory")
+mem.zero(data, int(buffer_size)) // clears the alignment padding
+mem.copy(data, raw_data(vertices), int(mesh.vertex_size))
+mem.copy(rawptr(uintptr(data) + uintptr(mesh.index_offset)), raw_data(indices), int(mesh.index_size))
+vk.UnmapMemory(device, staging_memory)
+
+// the real buffer foor gpu-only memory, usable as a copy target AND as an SSBO
 created: bool
 mesh.buffer, mesh.memory, created = create_buffer(device, physical_device, buffer_size, {.TRANSFER_DST, .STORAGE_BUFFER}, {.DEVICE_LOCAL})
 if !created { return {}, false }
 
 copy_buffer(device, command_pool, graphics_queue, staging_buffer, mesh.buffer, buffer_size)
 return mesh, true
-
 }
+
+copy_buffer :: proc(device: vk.Device, command_pool: vk.CommandPool, graphics_queue: vk.Queue, src, dst: vk.Buffer, size: vk.DeviceSize) {
+cb := begin_single_time_commands(device, command_pool)
+region := vk.BufferCopy{srcOffset = 0, dstOffset = 0, size = size}
+vk.CmdCopyBuffer(cb, src, dst, 1, &region)
+end_single_time_commands(device, command_pool, graphics_queue, cb)
+}
+
 
 // PART 3 - VULKAN DESCRIPTOR SETS 
 /* a discriptor is a handle/pointer to one resource ( a buffer or a texture) , a discriptor set is a bundle of them , and it's the only way 
