@@ -1,5 +1,5 @@
 // will be using the rubber_duck asset here 
-
+// BEEN USING LAZYVIM for this and it's awesome but sometimes a hassel to use 
 
 // the normal imports above every file 
 package main
