@@ -20,3 +20,13 @@ VertexData :: struct {
 pos : [3]f32 , 
 tc : [2]f32 , } 
 
+/* everything we need to remmeber about the uploaded mesh , we returns these through seperate out pointers (storageBuffer , vertexBufferSize 
+, indexBufferSize) , but in odin we just make one struct hehe */ 
+MeshBuffer :: struct { 
+buffer : vk.Buffer,  //one buffer holding vertices first and then indices 
+memory: vk.DeviceMemory , 
+vertex_size : vk.DeviceSize  // size of the vertex section in bytes 
+index_offset: vk.DeviceSize, // where the index section starts inside the buffer 
+vertex_offset : vk.DeviceSize // size of the index section in bytes 
+} 
+
