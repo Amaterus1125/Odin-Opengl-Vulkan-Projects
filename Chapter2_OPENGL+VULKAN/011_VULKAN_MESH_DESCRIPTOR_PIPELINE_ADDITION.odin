@@ -30,3 +30,28 @@ index_offset: vk.DeviceSize, // where the index section starts inside the buffer
 vertex_offset : vk.DeviceSize // size of the index section in bytes 
 } 
 
+/* Vulkan only lets a storage buffer descriptor start at an offset that's a multiple of the GPU minStorageOffsetAlignment (anywhere from 4 to 256 depending on GPU) , 256 is 
+the largest value in common use , so we pad up to it and some problems won't happen */ 
+
+STORAGE_OFFSET_ALIGNMENT :: 256 
+
+create_textured_vertex_buffer :: proc(
+	device: vk.Device,
+	physical_device: vk.PhysicalDevice,
+	command_pool: vk.CommandPool,
+	graphics_queue: vk.Queue,
+	filename: cstring,
+) -> (mesh: MeshBuffer, ok: bool) {
+	// loading the duck model 
+	options: cgltf.options
+	data, parse_result := cgltf.parse_file(options, filename)
+	if parse_result != .success {
+		fmt.println("Unable to load", filename, parse_result)
+		return {}, false
+	}
+	defer cgltf.free(data)
+	if cgltf.load_buffers(options, data, filename) != .success {
+		fmt.println("Unable to load buffers for", filename)
+		return {}, false
+	}
+
