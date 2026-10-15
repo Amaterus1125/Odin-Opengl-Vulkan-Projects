@@ -265,3 +265,24 @@ vk.UpdateDescriptorSets(device, u32(len(writes)), &writes[0], 0, nil)
 }
 
 
+// TEXTURE SUPPORT - FROM OLD FILES 
+
+create_image :: proc(device: vk.Device, physical_device: vk.PhysicalDevice, width, height: u32, format: vk.Format, tiling: vk.ImageTiling, usage: vk.ImageUsageFlags, properties: vk.MemoryPropertyFlags) -> (image: vk.Image, image_memory: vk.DeviceMemory, ok: bool) {
+image_info := vk.ImageCreateInfo{
+sType = .IMAGE_CREATE_INFO, imageType = .D2, format = format, extent = {width, height, 1},
+mipLevels = 1, arrayLayers = 1, samples = {._1}, tiling = tiling, usage = usage,
+sharingMode = .EXCLUSIVE, initialLayout = .UNDEFINED,
+}
+if vk.CreateImage(device, &image_info, nil, &image) != .SUCCESS { return {}, {}, false }
+
+mem_requirements: vk.MemoryRequirements
+vk.GetImageMemoryRequirements(device, image, &mem_requirements)
+alloc_info := vk.MemoryAllocateInfo{
+sType = .MEMORY_ALLOCATE_INFO, allocationSize = mem_requirements.size,
+	memoryTypeIndex = find_memory_type(physical_device, mem_requirements.memoryTypeBits, properties),
+}
+if vk.AllocateMemory(device, &alloc_info, nil, &image_memory) != .SUCCESS { return {}, {}, false }
+vk.BindImageMemory(device, image, image_memory, 0)
+return image, image_memory, true
+}
+
