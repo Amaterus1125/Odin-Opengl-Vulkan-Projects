@@ -244,3 +244,14 @@ return vk.AllocateDescriptorSets(device, &alloc_info, raw_data(state.descriptor_
 /* STEP 4 - point every binding of every set at a real resource , this is the vulkan analougue of glBindBufferBase/glBindTexture , with key difference that is it's done once up front 
 and not for every frame (this is the reason we can't swap textures from frame to frame) */ 
 
+update_descriptor_sets :: proc(device : vk.Device , state: ^VulkanState , image_count:u32) { 
+for i in 0 ..< int(image_count) { 
+//binding 0 - this is frame uniform buffer 
+ubo_info := vk.DescriptorBufferInfo{buffer = state.uniform_buffers[i] , offset = 0 , range - vk.DeviceSize(size_of(UniformBuffer))} 
+//binding 2 - the first slice of the mesh buffer - vertices 
+vertices_info := vk.DescriptorBufferInfo{ buffer = state.mesh.buffer , offset = 0 , range = state.mesh.vertex_size} 
+// binding 2: the SECOND slice of the SAME buffer indices
+indices_info := vk.DescriptorBufferInfo{buffer = state.mesh.buffer, offset = state.mesh.index_offset, range = state.mesh.index_size}
+// binding 3: texture + sampler
+image_info := vk.DescriptorImageInfo{sampler = state.texture_sampler, imageView = state.texture_view, imageLayout = .SHADER_READ_ONLY_OPTIMAL}
+
