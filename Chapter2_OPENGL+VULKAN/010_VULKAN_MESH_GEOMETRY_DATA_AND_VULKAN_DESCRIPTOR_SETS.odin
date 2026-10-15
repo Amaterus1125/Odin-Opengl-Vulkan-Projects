@@ -254,4 +254,14 @@ vertices_info := vk.DescriptorBufferInfo{ buffer = state.mesh.buffer , offset = 
 indices_info := vk.DescriptorBufferInfo{buffer = state.mesh.buffer, offset = state.mesh.index_offset, range = state.mesh.index_size}
 // binding 3: texture + sampler
 image_info := vk.DescriptorImageInfo{sampler = state.texture_sampler, imageView = state.texture_view, imageLayout = .SHADER_READ_ONLY_OPTIMAL}
+writes := [4]vk.WriteDescriptorSet{
+	{sType = .WRITE_DESCRIPTOR_SET, dstSet = state.descriptor_sets[i], dstBinding = 0, dstArrayElement = 0, descriptorCount = 1, descriptorType = .UNIFORM_BUFFER, pBufferInfo = &ubo_info},
+	{sType = .WRITE_DESCRIPTOR_SET, dstSet = state.descriptor_sets[i], dstBinding = 1, dstArrayElement = 0, descriptorCount = 1, descriptorType = .STORAGE_BUFFER, pBufferInfo = &vertices_info},
+	{sType = .WRITE_DESCRIPTOR_SET, dstSet = state.descriptor_sets[i], dstBinding = 2, dstArrayElement = 0, descriptorCount = 1, descriptorType = .STORAGE_BUFFER, pBufferInfo = &indices_info},
+	{sType = .WRITE_DESCRIPTOR_SET, dstSet = state.descriptor_sets[i], dstBinding = 3, dstArrayElement = 0, descriptorCount = 1, descriptorType = .COMBINED_IMAGE_SAMPLER, pImageInfo = &image_info},
+}
+vk.UpdateDescriptorSets(device, u32(len(writes)), &writes[0], 0, nil)
+}
+}
+
 
