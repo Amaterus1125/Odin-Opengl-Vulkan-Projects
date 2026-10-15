@@ -162,3 +162,18 @@ pPoolSizes = raw_data(pool_sizes),
 result := vk.CreateDescriptorPool(device, &pool_info, nil, &pool)
 return pool, result == .SUCCESS
 }
+descriptor_set_layout_binding :: proc(binding: u32, kind: vk.DescriptorType, stages: vk.ShaderStageFlags) -> vk.DescriptorSetLayoutBinding {
+return {binding = binding, descriptorType = kind, descriptorCount = 1, stageFlags = stages}
+}
+
+// steps 2 to 8 -  layout, allocate, fill in,`uniform_buffers` is one uniform buffer per swapchain image.
+create_descriptor_set :: proc(
+device: vk.Device,
+descriptor_pool: vk.DescriptorPool,
+uniform_buffers: []vk.Buffer,
+ubo_size: vk.DeviceSize, // pass size_of(UniformBuffer)
+mesh: MeshBuffer,
+texture_sampler: vk.Sampler,
+texture_view: vk.ImageView,
+) -> (layout: vk.DescriptorSetLayout, sets: []vk.DescriptorSet, ok: bool) {
+	image_count := len(uniform_buffers)
