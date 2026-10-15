@@ -306,5 +306,61 @@ copy_buffer_to_image :: proc(device: vk.Device, command_pool: vk.CommandPool, gr
 	vk.CmdCopyBufferToImage(cb, buffer, image, .TRANSFER_DST_OPTIMAL, 1, &region)
 	end_single_time_commands(device, command_pool, graphics_queue, cb)
 }
+transition_image_layout :: proc(device: vk.Device, command_pool: vk.CommandPool, graphics_queue: vk.Queue, image: vk.Image, old_layout, new_layout: vk.ImageLayout) {
+	cb := begin_single_time_commands(device, command_pool)
+
+	barrier := vk.ImageMemoryBarrier{
+		sType = .IMAGE_MEMORY_BARRIER, oldLayout = old_layout, newLayout = new_layout,
+		srcQueueFamilyIndex = vk.QUEUE_FAMILY_IGNORED, dstQueueFamilyIndex = vk.QUEUE_FAMILY_IGNORED,
+		image = image,
+		subresourceRange = {aspectMask = {.COLOR}, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1},
+	}
+	source_stage, destination_stage: vk.PipelineStageFlags
+
+	if old_layout == .UNDEFINED && new_layout == .TRANSFER_DST_OPTIMAL {
+		barrier.dstAccessMask = {.TRANSFER_WRITE}
+		source_stage = {.TOP_OF_PIPE}
+		destination_stage = {.TRANSFER}
+	} else if old_layout == .TRANSFER_DST_OPTIMAL && new_layout == .SHADER_READ_ONLY_OPTIMAL {
+		barrier.srcAccessMask = {.TRANSFER_WRITE}
+		barrier.dstAccessMask = {.SHADER_READ}
+		source_stage = {.TRANSFER}
+		destination_stage = {.FRAGMENT_SHADER}
+	}
+	vk.CmdPipelineBarrier(cb, source_stage, destination_stage, {}, 0, nil, 0, nil, 1, &barrier)
+
+	end_single_time_commands(device, command_pool, graphics_queue, cb)
+}
+
+create_texture_image :: proc(device: vk.Device, physical_device: vk.PhysicalDevice, command_pool: vk.CommandPool, graphics_queue: vk.Queue, filename: cstring) -> (image: vk.Image, image_memory: vk.DeviceMemory, ok: bool) {
+	tex_width, tex_height, tex_channels: i32
+	pixels := stbi.load(filename, &tex_width, &tex_height, &tex_channels, 4)
+	if pixels == nil {
+		fmt.println("Failed to load [", filename, "] texture")
+		return {}, {}, false
+	}
+	defer stbi.image_free(pixels)
+
+	image_size := vk.DeviceSize(tex_width * tex_height * 4)
+
+	staging_buffer, staging_memory, staging_ok := create_buffer(device, physical_device, image_size, {.TRANSFER_SRC}, {.HOST_VISIBLE, .HOST_COHERENT})
+	if !staging_ok { return {}, {}, false }
+	defer destroy_buffer(device, staging_buffer, staging_memory)
+
+	data: rawptr
+	vk.MapMemory(device, staging_memory, 0, image_size, {}, &data)
+	mem.copy(data, pixels, int(image_size))
+	vk.UnmapMemory(device, staging_memory)
+
+	created: bool
+	image, image_memory, created = create_image(device, physical_device, u32(tex_width), u32(tex_height), .R8G8B8A8_UNORM, .OPTIMAL, {.TRANSFER_DST, .SAMPLED}, {.DEVICE_LOCAL})
+	if !created { return {}, {}, false }
+
+	transition_image_layout(device, command_pool, graphics_queue, image, .UNDEFINED, .TRANSFER_DST_OPTIMAL)
+	copy_buffer_to_image(device, command_pool, graphics_queue, staging_buffer, image, u32(tex_width), u32(tex_height))
+	transition_image_layout(device, command_pool, graphics_queue, image, .TRANSFER_DST_OPTIMAL, .SHADER_READ_ONLY_OPTIMAL)
+
+	return image, image_memory, true
+}
 
 
