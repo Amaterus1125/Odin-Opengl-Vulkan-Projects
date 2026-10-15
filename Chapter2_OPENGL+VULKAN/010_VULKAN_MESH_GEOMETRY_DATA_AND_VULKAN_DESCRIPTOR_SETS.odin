@@ -363,4 +363,101 @@ create_texture_image :: proc(device: vk.Device, physical_device: vk.PhysicalDevi
 	return image, image_memory, true
 }
 
+// REUSED HELPERS (buffers, command buffers, instance/device setup)
+find_memory_type :: proc(physical_device: vk.PhysicalDevice, type_filter: u32, properties: vk.MemoryPropertyFlags) -> u32 {
+	mem_properties: vk.PhysicalDeviceMemoryProperties
+	vk.GetPhysicalDeviceMemoryProperties(physical_device, &mem_properties)
+	for i in 0 ..< mem_properties.memoryTypeCount {
+		bit := u32(1) << i
+		if (type_filter & bit) != 0 && (mem_properties.memoryTypes[i].propertyFlags & properties == properties) {
+			return i
+		}
+	}
+	return 0xFFFFFFFF
+}
+
+create_buffer :: proc(device: vk.Device, physical_device: vk.PhysicalDevice, size: vk.DeviceSize, usage: vk.BufferUsageFlags, properties: vk.MemoryPropertyFlags) -> (buffer: vk.Buffer, buffer_memory: vk.DeviceMemory, ok: bool) {
+	buffer_info := vk.BufferCreateInfo{sType = .BUFFER_CREATE_INFO, size = size, usage = usage, sharingMode = .EXCLUSIVE}
+	if vk.CreateBuffer(device, &buffer_info, nil, &buffer) != .SUCCESS { return {}, {}, false }
+	mem_requirements: vk.MemoryRequirements
+	vk.GetBufferMemoryRequirements(device, buffer, &mem_requirements)
+	alloc_info := vk.MemoryAllocateInfo{sType = .MEMORY_ALLOCATE_INFO, allocationSize = mem_requirements.size, memoryTypeIndex = find_memory_type(physical_device, mem_requirements.memoryTypeBits, properties)}
+	if vk.AllocateMemory(device, &alloc_info, nil, &buffer_memory) != .SUCCESS { return {}, {}, false }
+	vk.BindBufferMemory(device, buffer, buffer_memory, 0)
+	return buffer, buffer_memory, true
+}
+
+destroy_buffer :: proc(device: vk.Device, buffer: vk.Buffer, buffer_memory: vk.DeviceMemory) {
+	vk.DestroyBuffer(device, buffer, nil)
+	vk.FreeMemory(device, buffer_memory, nil)
+}
+
+begin_single_time_commands :: proc(device: vk.Device, command_pool: vk.CommandPool) -> vk.CommandBuffer {
+	alloc_info := vk.CommandBufferAllocateInfo{sType = .COMMAND_BUFFER_ALLOCATE_INFO, commandPool = command_pool, level = .PRIMARY, commandBufferCount = 1}
+	command_buffer: vk.CommandBuffer
+	vk.AllocateCommandBuffers(device, &alloc_info, &command_buffer)
+	begin_info := vk.CommandBufferBeginInfo{sType = .COMMAND_BUFFER_BEGIN_INFO, flags = {.ONE_TIME_SUBMIT}}
+	vk.BeginCommandBuffer(command_buffer, &begin_info)
+	return command_buffer
+}
+
+end_single_time_commands :: proc(device: vk.Device, command_pool: vk.CommandPool, graphics_queue: vk.Queue, command_buffer: vk.CommandBuffer) {
+	cb := command_buffer
+	vk.EndCommandBuffer(cb)
+	submit_info := vk.SubmitInfo{sType = .SUBMIT_INFO, commandBufferCount = 1, pCommandBuffers = &cb}
+	vk.QueueSubmit(graphics_queue, 1, &submit_info, {})
+	vk.QueueWaitIdle(graphics_queue)
+	vk.FreeCommandBuffers(device, command_pool, 1, &cb)
+}
+
+create_image_view :: proc(device: vk.Device, image: vk.Image, format: vk.Format, aspect_flags: vk.ImageAspectFlags) -> (vk.ImageView, bool) {
+	view_info := vk.ImageViewCreateInfo{sType = .IMAGE_VIEW_CREATE_INFO, image = image, viewType = .D2, format = format, subresourceRange = {aspectMask = aspect_flags, baseMipLevel = 0, levelCount = 1, baseArrayLayer = 0, layerCount = 1}}
+	view: vk.ImageView
+	result := vk.CreateImageView(device, &view_info, nil, &view)
+	return view, result == .SUCCESS
+}
+
+create_instance :: proc() -> vk.Instance {
+	layers := []cstring{"VK_LAYER_KHRONOS_validation"}
+	glfw_extensions := glfw.GetRequiredInstanceExtensions()
+	app_info := vk.ApplicationInfo{sType = .APPLICATION_INFO, pApplicationName = "Vulkan", apiVersion = vk.API_VERSION_1_1}
+	create_info := vk.InstanceCreateInfo{sType = .INSTANCE_CREATE_INFO, pApplicationInfo = &app_info, enabledLayerCount = u32(len(layers)), ppEnabledLayerNames = raw_data(layers), enabledExtensionCount = u32(len(glfw_extensions)), ppEnabledExtensionNames = raw_data(glfw_extensions)}
+	instance: vk.Instance
+	vk_check(vk.CreateInstance(&create_info, nil, &instance), "creating instance")
+	vk.load_proc_addresses(instance)
+	return instance
+}
+
+find_suitable_physical_device :: proc(instance: vk.Instance, selector: proc(device: vk.PhysicalDevice) -> bool) -> (vk.PhysicalDevice, bool) {
+	device_count: u32
+	vk.EnumeratePhysicalDevices(instance, &device_count, nil)
+	if device_count == 0 { return {}, false }
+	devices := make([]vk.PhysicalDevice, device_count)
+	defer delete(devices)
+	vk.EnumeratePhysicalDevices(instance, &device_count, raw_data(devices))
+	for device in devices { if selector(device) { return device, true } }
+	return {}, false
+}
+
+find_queue_families :: proc(device: vk.PhysicalDevice, desired_flags: vk.QueueFlags) -> u32 {
+	family_count: u32
+	vk.GetPhysicalDeviceQueueFamilyProperties(device, &family_count, nil)
+	families := make([]vk.QueueFamilyProperties, family_count)
+	defer delete(families)
+	vk.GetPhysicalDeviceQueueFamilyProperties(device, &family_count, raw_data(families))
+	for family, i in families { if family.queueCount > 0 && (family.queueFlags & desired_flags == desired_flags) { return u32(i) } }
+	return 0
+}
+
+create_device :: proc(physical_device: vk.PhysicalDevice, device_features: vk.PhysicalDeviceFeatures, graphics_family: u32) -> (vk.Device, vk.Result) {
+	extensions := []cstring{vk.KHR_SWAPCHAIN_EXTENSION_NAME}
+	queue_priority: f32 = 1.0
+	queue_info := vk.DeviceQueueCreateInfo{sType = .DEVICE_QUEUE_CREATE_INFO, queueFamilyIndex = graphics_family, queueCount = 1, pQueuePriorities = &queue_priority}
+	features_local := device_features
+	create_info := vk.DeviceCreateInfo{sType = .DEVICE_CREATE_INFO, queueCreateInfoCount = 1, pQueueCreateInfos = &queue_info, enabledExtensionCount = u32(len(extensions)), ppEnabledExtensionNames = raw_data(extensions), pEnabledFeatures = &features_local}
+	device: vk.Device
+	result := vk.CreateDevice(physical_device, &create_info, nil, &device)
+	return device, result
+}
+
 
