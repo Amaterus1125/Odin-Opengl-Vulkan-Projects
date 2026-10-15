@@ -460,4 +460,100 @@ create_device :: proc(physical_device: vk.PhysicalDevice, device_features: vk.Ph
 	return device, result
 }
 
+//  MAIN builds everything the demo's pipeline will need to bind - mesh SSBO + texture + uniform buffers, wrapped into descriptor sets
+
+main :: proc() {
+	glfw.Init()
+	defer glfw.Terminate()
+	glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
+
+	window := glfw.CreateWindow(800, 600, "Vulkan Mesh + Descriptor Sets", nil, nil)
+	defer glfw.DestroyWindow(window)
+	vk.load_proc_addresses(rawptr(glfw.GetInstanceProcAddress))
+
+	instance := create_instance()
+	defer vk.DestroyInstance(instance, nil)
+
+	surface: vk.SurfaceKHR
+	vk_check(glfw.CreateWindowSurface(instance, window, nil, &surface), "creating window surface")
+	defer vk.DestroySurfaceKHR(instance, surface, nil)
+
+	physical_device, found := find_suitable_physical_device(instance, proc(device: vk.PhysicalDevice) -> bool {
+		family_count: u32
+		vk.GetPhysicalDeviceQueueFamilyProperties(device, &family_count, nil)
+		return family_count > 0
+	})
+	if !found { fmt.println("no suitable gpu found"); return }
+
+	graphics_family := find_queue_families(physical_device, {.GRAPHICS})
+
+	// the wireframe geometry shader needs this optional gpu feature switched on
+	supported: vk.PhysicalDeviceFeatures
+	vk.GetPhysicalDeviceFeatures(physical_device, &supported)
+	if !supported.geometryShader { fmt.println("this gpu has no geometry shader support"); return }
+	device_features: vk.PhysicalDeviceFeatures
+	device_features.geometryShader = true
+
+	device, dev_result := create_device(physical_device, device_features, graphics_family)
+	vk_check(dev_result, "creating logical device")
+	defer vk.DestroyDevice(device, nil)
+	vk.load_proc_addresses(device)
+
+	graphics_queue: vk.Queue
+	vk.GetDeviceQueue(device, graphics_family, 0, &graphics_queue)
+
+	pool_info := vk.CommandPoolCreateInfo{sType = .COMMAND_POOL_CREATE_INFO, queueFamilyIndex = graphics_family}
+	command_pool: vk.CommandPool
+	vk_check(vk.CreateCommandPool(device, &pool_info, nil, &command_pool), "creating command pool")
+	defer vk.DestroyCommandPool(device, command_pool, nil)
+
+	state: VulkanState
+	defer delete(state.uniform_buffers)
+	defer delete(state.uniform_buffers_memory)
+	defer delete(state.descriptor_sets)
+
+	// --- texture (binding 3) --- EDIT THESE PATHS to real files on your system
+	texture_image, texture_memory, tex_ok := create_texture_image(device, physical_device, command_pool, graphics_queue, "rubber_duck/DuckCM.png")
+	if !tex_ok { fmt.println("failed to load texture image"); return }
+	defer { vk.DestroyImage(device, texture_image, nil); vk.FreeMemory(device, texture_memory, nil) }
+
+	view_ok: bool
+	state.texture_view, view_ok = create_image_view(device, texture_image, .R8G8B8A8_UNORM, {.COLOR})
+	if !view_ok { fmt.println("failed to create texture image view"); return }
+	defer vk.DestroyImageView(device, state.texture_view, nil)
+
+	sampler_ok: bool
+	state.texture_sampler, sampler_ok = create_texture_sampler(device)
+	if !sampler_ok { fmt.println("failed to create texture sampler"); return }
+	defer vk.DestroySampler(device, state.texture_sampler, nil)
+
+	// --- mesh vertices + indices in one SSBO (bindings 1 and 2) ---
+	mesh_ok: bool
+	state.mesh, mesh_ok = create_textured_vertex_buffer(device, physical_device, command_pool, graphics_queue, "rubber_duck/scene.gltf")
+	if !mesh_ok { fmt.println("failed to create mesh buffer"); return }
+	defer destroy_buffer(device, state.mesh.buffer, state.mesh.memory)
+
+	// --- uniform buffers, one per swapchain image (binding 0) ---
+	if !create_uniform_buffers(device, physical_device, &state, IMAGE_COUNT) { fmt.println("failed to create uniform buffers"); return }
+	defer for i in 0 ..< len(state.uniform_buffers) {
+		destroy_buffer(device, state.uniform_buffers[i], state.uniform_buffers_memory[i])
+	}
+
+	// --- descriptor pool -> layout -> sets -> update ---
+	pool_ok: bool
+	// 1 uniform buffer, 2 storage buffers (vertices + indices), 1 texture per set
+	state.descriptor_pool, pool_ok = create_descriptor_pool(device, IMAGE_COUNT, 1, 2, 1)
+	if !pool_ok { fmt.println("failed to create descriptor pool"); return }
+	defer vk.DestroyDescriptorPool(device, state.descriptor_pool, nil) // also frees every set allocated from it
+
+	layout_ok: bool
+	state.descriptor_set_layout, layout_ok = create_descriptor_set_layout(device)
+	if !layout_ok { fmt.println("failed to create descriptor set layout"); return }
+	defer vk.DestroyDescriptorSetLayout(device, state.descriptor_set_layout, nil)
+
+	if !allocate_descriptor_sets(device, &state, IMAGE_COUNT) { fmt.println("failed to allocate descriptor sets"); return }
+	update_descriptor_sets(device, &state, IMAGE_COUNT)
+
+	fmt.println("mesh loaded, texture ready, and", len(state.descriptor_sets), "descriptor sets created and updated!")
+}
 
