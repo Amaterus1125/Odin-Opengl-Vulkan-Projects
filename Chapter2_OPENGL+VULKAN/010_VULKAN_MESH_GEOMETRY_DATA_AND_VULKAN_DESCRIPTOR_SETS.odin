@@ -527,19 +527,19 @@ main :: proc() {
 	if !sampler_ok { fmt.println("failed to create texture sampler"); return }
 	defer vk.DestroySampler(device, state.texture_sampler, nil)
 
-	// --- mesh vertices + indices in one SSBO (bindings 1 and 2) ---
+	//  mesh vertices + indices in one SSBO (bindings 1 and 2)
 	mesh_ok: bool
 	state.mesh, mesh_ok = create_textured_vertex_buffer(device, physical_device, command_pool, graphics_queue, "rubber_duck/scene.gltf")
 	if !mesh_ok { fmt.println("failed to create mesh buffer"); return }
 	defer destroy_buffer(device, state.mesh.buffer, state.mesh.memory)
 
-	// --- uniform buffers, one per swapchain image (binding 0) ---
+	// uniform buffers, one per swapchain image (binding 0)
 	if !create_uniform_buffers(device, physical_device, &state, IMAGE_COUNT) { fmt.println("failed to create uniform buffers"); return }
 	defer for i in 0 ..< len(state.uniform_buffers) {
 		destroy_buffer(device, state.uniform_buffers[i], state.uniform_buffers_memory[i])
 	}
 
-	// --- descriptor pool -> layout -> sets -> update ---
+	//  descriptor pool -> layout -> sets -> update 
 	pool_ok: bool
 	// 1 uniform buffer, 2 storage buffers (vertices + indices), 1 texture per set
 	state.descriptor_pool, pool_ok = create_descriptor_pool(device, IMAGE_COUNT, 1, 2, 1)
