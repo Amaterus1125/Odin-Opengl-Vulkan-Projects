@@ -177,3 +177,52 @@ texture_sampler: vk.Sampler,
 texture_view: vk.ImageView,
 ) -> (layout: vk.DescriptorSetLayout, sets: []vk.DescriptorSet, ok: bool) {
 	image_count := len(uniform_buffers)
+// step 2-3 - the LAYOUT describes what a set contains. These 4 binding numbers MUST match layout(binding = N) in the shaders (like in last file 010)
+bindings := [4]vk.DescriptorSetLayoutBinding{
+descriptor_set_layout_binding(0, .UNIFORM_BUFFER, {.VERTEX}),           // mvp matrix
+descriptor_set_layout_binding(1, .STORAGE_BUFFER, {.VERTEX}),           // vertices
+descriptor_set_layout_binding(2, .STORAGE_BUFFER, {.VERTEX}),           // indices
+descriptor_set_layout_binding(3, .COMBINED_IMAGE_SAMPLER, {.FRAGMENT}), // texture
+}
+layout_info := vk.DescriptorSetLayoutCreateInfo{
+sType = .DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+bindingCount = u32(len(bindings)),
+pBindings = &bindings[0],
+}
+if vk.CreateDescriptorSetLayout(device, &layout_info, nil, &layout) != .SUCCESS {
+return {}, nil, false
+}
+
+// step 4 - ALLOCATE one set per swapchain image, all using that layout
+layouts := make([]vk.DescriptorSetLayout, image_count)
+defer delete(layouts)
+for i in 0 ..< image_count { layouts[i] = layout }
+
+alloc_info := vk.DescriptorSetAllocateInfo{
+sType  = .DESCRIPTOR_SET_ALLOCATE_INFO,
+descriptorPool  = descriptor_pool,
+descriptorSetCount = u32(image_count),
+pSetLayouts = raw_data(layouts),
+}
+sets = make([]vk.DescriptorSet, image_count)
+if vk.AllocateDescriptorSets(device, &alloc_info, raw_data(sets)) != .SUCCESS {
+return layout, sets, false
+}
+
+// step 5-8 - the sets exist but are empty. Point each binding at a real resource and this is vulkan's version of glBindBuffer / glBindTexture (already discussed in 010) except it's done once here instead of every frame, so you can't just swap the texture between frames.
+for i in 0 ..< image_count {
+ubo_info      := vk.DescriptorBufferInfo{buffer = uniform_buffers[i], offset = 0, range = ubo_size}
+vertices_info := vk.DescriptorBufferInfo{buffer = mesh.buffer, offset = 0, range = mesh.vertex_size}
+indices_info  := vk.DescriptorBufferInfo{buffer = mesh.buffer, offset = mesh.index_offset, range = mesh.index_size}
+image_info    := vk.DescriptorImageInfo{sampler = texture_sampler, imageView = texture_view, imageLayout = .SHADER_READ_ONLY_OPTIMAL}
+// one write per binding like we did in 010 file (last file)
+writes := [4]vk.WriteDescriptorSet{
+{sType = .WRITE_DESCRIPTOR_SET, dstSet = sets[i], dstBinding = 0, descriptorCount = 1, descriptorType = .UNIFORM_BUFFER, pBufferInfo = &ubo_info},
+{sType = .WRITE_DESCRIPTOR_SET, dstSet = sets[i], dstBinding = 1, descriptorCount = 1, descriptorType = .STORAGE_BUFFER, pBufferInfo = &vertices_info},
+{sType = .WRITE_DESCRIPTOR_SET, dstSet = sets[i], dstBinding = 2, descriptorCount = 1, descriptorType = .STORAGE_BUFFER, pBufferInfo = &indices_info},
+{sType = .WRITE_DESCRIPTOR_SET, dstSet = sets[i], dstBinding = 3, descriptorCount = 1, descriptorType = .COMBINED_IMAGE_SAMPLER, pImageInfo = &image_info},
+		}
+vk.UpdateDescriptorSets(device, u32(len(writes)), &writes[0], 0, nil)
+}
+return layout, sets, true
+}
