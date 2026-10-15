@@ -134,3 +134,31 @@ return mesh, true
 }
 
 
+// PART 2: DESCRIPTOR SETS
+// Descriptor sets can't be created directly and they are handed out by a pool the pool must be big enough for everything we'll allocate, and we make one set per swapchain image, so every count is multiplied by image_count.
+create_descriptor_pool :: proc(
+device: vk.Device,
+image_count: u32,
+uniform_buffer_count, storage_buffer_count, sampler_count: u32, ) -> (pool: vk.DescriptorPool, ok: bool) {
+pool_sizes := make([dynamic]vk.DescriptorPoolSize)
+defer delete(pool_sizes)
+
+if uniform_buffer_count > 0 {
+append(&pool_sizes, vk.DescriptorPoolSize{type = .UNIFORM_BUFFER, descriptorCount = image_count * uniform_buffer_count})
+}
+if storage_buffer_count > 0 {
+append(&pool_sizes, vk.DescriptorPoolSize{type = .STORAGE_BUFFER, descriptorCount = image_count * storage_buffer_count})
+}
+if sampler_count > 0 {
+append(&pool_sizes, vk.DescriptorPoolSize{type = .COMBINED_IMAGE_SAMPLER, descriptorCount = image_count * sampler_count})
+}
+
+pool_info := vk.DescriptorPoolCreateInfo{
+sType = .DESCRIPTOR_POOL_CREATE_INFO,
+maxSets = image_count, // one set per swapchain image
+poolSizeCount = u32(len(pool_sizes)),
+pPoolSizes = raw_data(pool_sizes),
+}
+result := vk.CreateDescriptorPool(device, &pool_info, nil, &pool)
+return pool, result == .SUCCESS
+}
