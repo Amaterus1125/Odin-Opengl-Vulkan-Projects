@@ -6,11 +6,11 @@ from 008: copy_buffer, UniformBuffer, create_uniform_buffers, update_uniform_buf
 from 009: create_buffer, destroy_buffer, find_memory_type, create_image_view, create_texture_image, create_texture_sampler, find_depth_format 
 (008's copy_buffer was NOT copied into 009 if it's missing, copy it over from 013. Don't paste it twice or Odin will complain about a redeclaration.)  */ 
 
-/* Geometry shaders are an optional GPU feature. Wherever main fills in device_features`, turn it on before creating the device: device_features.geometryShader = true  */
-/* Compile the 3 new shader files (VK02.vert / VK02.geom / VK02.frag):
-glslangValidator -V VK02.vert -o VK02.vert.spv
-glslangValidator -V VK02.geom -o VK02.geom.spv
-glslangValidator -V VK02.frag -o VK02.frag.spv  */ 
+
+/* WHAT THIS FILE DOES - same as before using duck model from rubber_duck and the scene.gltf thing 
+1. Loads the duck mesh from scene.gltf and uploads its vertices AND indices into ONE GPU buffer (a "storage buffer", SSBO).
+2. Creates a descriptor pool, a descriptor set layout, and one descriptor set per swapchain image. A descriptor set is the list of resources (uniform buffer, vertex buffer, index buffer, texture)
+the shaders are allowed to use. Vulkan won't let a shader use a buffer or texture any other way.  */
 
 // USING MESH GEOMETRY DATA IN VULKAN  
 /* Same programmable vertex pulling (PVP) idea as our OpenGL 008 file: no vertex attributes. The shader gets the raw vertices AND the raw indices as storage buffers (SSBOs) and looks things up itself, we use cgltf, exactly as in 008. */
@@ -35,23 +35,4 @@ the largest value in common use , so we pad up to it and some problems won't hap
 
 STORAGE_OFFSET_ALIGNMENT :: 256 
 
-create_textured_vertex_buffer :: proc(
-	device: vk.Device,
-	physical_device: vk.PhysicalDevice,
-	command_pool: vk.CommandPool,
-	graphics_queue: vk.Queue,
-	filename: cstring,
-) -> (mesh: MeshBuffer, ok: bool) {
-	// loading the duck model 
-	options: cgltf.options
-	data, parse_result := cgltf.parse_file(options, filename)
-	if parse_result != .success {
-		fmt.println("Unable to load", filename, parse_result)
-		return {}, false
-	}
-	defer cgltf.free(data)
-	if cgltf.load_buffers(options, data, filename) != .success {
-		fmt.println("Unable to load buffers for", filename)
-		return {}, false
-	}
 
