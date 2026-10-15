@@ -1,0 +1,2 @@
+so basically, vulkan is very big in itself and reuses a lot of components from before, so starting from 011 
+I will only write the newer necessary code and execute all of them together at the end connecting file and you can do the same as writing such big codes at a time is a hassel 
