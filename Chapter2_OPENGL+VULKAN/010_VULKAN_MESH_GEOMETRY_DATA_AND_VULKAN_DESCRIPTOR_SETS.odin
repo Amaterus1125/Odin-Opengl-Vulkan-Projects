@@ -203,3 +203,41 @@ return pool, result == .SUCCESS
 descriptor_set_layout_binding :: proc(binding : u32 , kind : vk.DescriptorType , stages : vk.ShaderStageFlags) -> vk.DescriptorSetLayoutBinding { 
 return {binding = binding, descriptorType = kind, descriptorCount = 1, stageFlags = stages}
 }
+
+//STEP -2 - the layout , these are 4 bindings must match the "layout(binding = N)" declarations in the shaders 
+/* 0 = uniform buffer (mvp matrix) - vertex shader 
+   1 = storage buffer (vertices) - vertex shader 
+   2 = storage buffer (indices) - vertex shader 
+   3 = texture + sampler - fragment shader */ 
+
+create_descriptor_set_layout :: proc(device : vk.Device) -> (layout : vk.DescriptorSetLayout , ok : bool ) { 
+bindings := [4]vk.DescriptorSetLayoutBinding( 
+descriptor_set_layout_binding(0 , .UNIFORM_BUFFER , {.VERTEX}) , 
+descriptor_set_layout_binding(1, .STORAGE_BUFFER, {.VERTEX}),
+descriptor_set_layout_binding(2, .STORAGE_BUFFER, {.VERTEX}),
+descriptor_set_layout_binding(3, .COMBINED_IMAGE_SAMPLER, {.FRAGMENT}),
+}
+
+layout _info := vk.DescriptorSetLayoutCreateInfo {
+sType = .DESCRIPTOR_SET_LAYOUT_CREATE_INFO , 
+bindingCount = u32(len(bindings)) , 
+pBindings = &bindings[0] , } 
+result := vk.CreateDescriptorSetLayout(device, &layout_info, nil, &layout)
+return layout, result == .SUCCESS
+}
+
+// STEP 3 - allocate one set per swapchain image , all sharing the layout 
+allocate_descriptor_sets :: proc(device : vk.Device , state : ^VulkanStae , image_count : u32 ) -> bool { 
+layouts := make([]vk.DescriptorSetLayout , image_count) 
+defer delete(layouts) 
+for &1 in layouts { 1 = state.descriptor_set_layout) 
+lloc_info := vk.DescriptorSetAllocateInfo{
+sType              = .DESCRIPTOR_SET_ALLOCATE_INFO,
+descriptorPool     = state.descriptor_pool,
+descriptorSetCount = image_count,
+pSetLayouts        = raw_data(layouts),
+}
+resize(&state.descriptor_sets, int(image_count))
+return vk.AllocateDescriptorSets(device, &alloc_info, raw_data(state.descriptor_sets)) == .SUCCESS
+}
+
