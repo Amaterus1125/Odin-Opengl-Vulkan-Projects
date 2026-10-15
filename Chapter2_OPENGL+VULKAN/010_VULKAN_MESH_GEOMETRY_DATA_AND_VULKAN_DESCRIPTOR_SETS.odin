@@ -241,3 +241,6 @@ resize(&state.descriptor_sets, int(image_count))
 return vk.AllocateDescriptorSets(device, &alloc_info, raw_data(state.descriptor_sets)) == .SUCCESS
 }
 
+/* STEP 4 - point every binding of every set at a real resource , this is the vulkan analougue of glBindBufferBase/glBindTexture , with key difference that is it's done once up front 
+and not for every frame (this is the reason we can't swap textures from frame to frame) */ 
+
