@@ -318,13 +318,21 @@ vk_state.uniform_buffers_memory = make([]vk.DeviceMemory, image_count)
 for i in 0 ..< image_count {
 ok: bool
 
-	// HOST_VISIBLE + HOST_COHERENT = the CPU can write to it directly every frame with no extra flushing
-	vk_state.uniform_buffers[i], vk_state.uniform_buffers_memory[i], ok = create_buffer(
-	vk_dev.device, vk_dev.physical_device, size_of(UniformBuffer),
-     {.UNIFORM_BUFFER}, {.HOST_VISIBLE, .HOST_COHERENT}, 
+// HOST_VISIBLE + HOST_COHERENT = the CPU can write to it directly every frame with no extra flushing
+vk_state.uniform_buffers[i], vk_state.uniform_buffers_memory[i], ok = create_buffer(
+vk_dev.device, vk_dev.physical_device, size_of(UniformBuffer),
+{.UNIFORM_BUFFER}, {.HOST_VISIBLE, .HOST_COHERENT}, 
 )
 if !ok { return false }
 }
 return true
+}
+// copy a UniformBuffer struct into the uniform buffer that belongs to this swapchain image
+update_frame_uniform_buffer :: proc(image_index: u32, ubo: UniformBuffer) {
+	local := ubo // proc parameters can't have their address taken in Odin, so copy to a local first
+	data: rawptr
+	vk_check(vk.MapMemory(vk_dev.device, vk_state.uniform_buffers_memory[image_index], 0, size_of(UniformBuffer), {}, &data))
+	mem.copy(data, &local, size_of(UniformBuffer))
+	vk.UnmapMemory(vk_dev.device, vk_state.uniform_buffers_memory[image_index])
 }
 
