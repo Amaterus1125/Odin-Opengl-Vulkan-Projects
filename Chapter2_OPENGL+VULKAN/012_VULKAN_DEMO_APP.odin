@@ -579,3 +579,24 @@ vk.DestroyDebugUtilsMessengerEXT(vk_state.instance, vk_state.messenger, nil)
 vk.DestroyInstance(vk_state.instance, nil)
 }
 
+
+// main proc - similar to the OpenGL samples like init GLFW, set the keyboard callback, init Vulkan, main loop, deinit
+
+
+main :: proc() {
+// Initialise GLFW. The C++ also calls glslang_initialize_process() and volkInitialize(): we don't need glslang
+(shaders are pre-compiled to SPIR-V) and loading the Vulkan functions is the next few lines instead of volk. */
+if !glfw.Init() { os.exit(1) }
+defer glfw.Terminate()
+if !glfw.VulkanSupported() { os.exit(1) }
+
+// load the very first Vulkan function pointers from GLFW's loader (Odin's replacement for volkInitialize)
+vk.load_proc_addresses_global(rawptr(glfw.GetInstanceProcAddress))
+
+// GLFW was originally an OpenGL helper library, so we tell it not to create any GL context. Also make the window non-resizable, because we don't recreate the swapchain on resize.
+glfw.WindowHint(glfw.CLIENT_API, glfw.NO_API)
+glfw.WindowHint(glfw.RESIZABLE, glfw.FALSE)
+window = glfw.CreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "VulkanApp", nil, nil)
+if window == nil { os.exit(1) }
+defer glfw.DestroyWindow(window)
+glfw.SetKeyCallback(window, key_callback)
