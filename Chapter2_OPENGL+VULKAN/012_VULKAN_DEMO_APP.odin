@@ -426,5 +426,10 @@ if !ok {
 fmt.println("Failed to create pipeline HOHO")
 return false
 }
-
+// one framebuffer per swapchain image: it joins that image (color) with the shared depth buffer
+vk_state.framebuffers, ok = create_color_and_depth_framebuffers(
+&vk_dev, vk_state.render_pass, vk_state.depth_view, SCREEN_WIDTH, SCREEN_HEIGHT,
+)
+return ok
+}
 
