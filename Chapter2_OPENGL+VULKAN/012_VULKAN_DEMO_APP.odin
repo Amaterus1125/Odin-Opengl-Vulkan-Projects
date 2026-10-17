@@ -382,3 +382,13 @@ shader_stage_info({.FRAGMENT}, vk_state.frag_shader, "main"),
 shader_stage_info({.GEOMETRY}, vk_state.geom_shader, "main"),
 }
 
+// Load the texture from file, make an image view for it and a sampler (how the GPU filters/wraps the texture)
+if !create_texture_image(
+vk_dev.device, vk_dev.physical_device, vk_dev.command_pool, vk_dev.graphics_queue,
+"data/rubber_duck/DuckCM.png", &vk_state.texture_image, &vk_state.texture_memory,
+) { return false }
+vk_state.texture_view, ok = create_image_view(vk_dev.device, vk_state.texture_image, .R8G8B8A8_UNORM, {.COLOR})
+if !ok { return false }
+vk_state.texture_sampler, ok = create_texture_sampler(vk_dev.device)
+if !ok { return false }
+
