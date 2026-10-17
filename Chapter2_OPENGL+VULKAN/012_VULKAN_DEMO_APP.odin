@@ -392,3 +392,6 @@ if !ok { return false }
 vk_state.texture_sampler, ok = create_texture_sampler(vk_dev.device)
 if !ok { return false }
 
+// Create the depth buffer
+vk_state.depth_image, vk_state.depth_memory, vk_state.depth_view, ok = create_depth_resources(&vk_dev, SCREEN_WIDTH, SCREEN_HEIGHT)
+if !ok { return false } 
