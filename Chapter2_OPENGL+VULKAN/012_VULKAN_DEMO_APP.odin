@@ -366,3 +366,19 @@ if !ok { return false }
 vk_state.geom_shader, ok = create_shader_module(vk_dev.device, "data/shaders/chapter03/VK02.geom.spv")
 if !ok { return false }
 
+//Load the rubber duck into one storage buffer (PART 1 above), then make the uniform buffers
+vk_state.mesh, ok = create_textured_vertex_buffer(
+vk_dev.device, vk_dev.physical_device, vk_dev.command_pool, vk_dev.graphics_queue,
+"data/rubber_duck/scene.gltf",
+)
+if !ok || !create_frame_uniform_buffers() {
+fmt.println("Cannot create data buffers")
+return false
+}
+// The pipeline shader stages, built from the modules we just created
+shader_stages := [3]vk.PipelineShaderStageCreateInfo{
+shader_stage_info({.VERTEX},   vk_state.vert_shader, "main"),
+shader_stage_info({.FRAGMENT}, vk_state.frag_shader, "main"),
+shader_stage_info({.GEOMETRY}, vk_state.geom_shader, "main"),
+}
+
