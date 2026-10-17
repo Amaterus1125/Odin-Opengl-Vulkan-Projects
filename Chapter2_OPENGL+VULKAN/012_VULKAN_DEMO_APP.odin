@@ -416,3 +416,15 @@ RenderPassCreateInfo{clear_color = true, clear_depth = true, flags = {.First, .L
 )
 if !ok { return false }
 
+vk_state.pipeline_layout, ok = create_pipeline_layout(vk_dev.device, vk_state.descriptor_set_layout)
+if !ok { return false }
+vk_state.graphics_pipeline, ok = create_graphics_pipeline(
+vk_dev.device, SCREEN_WIDTH, SCREEN_HEIGHT,
+vk_state.render_pass, vk_state.pipeline_layout, shader_stages[:],
+)
+if !ok {
+fmt.println("Failed to create pipeline HOHO")
+return false
+}
+
+
