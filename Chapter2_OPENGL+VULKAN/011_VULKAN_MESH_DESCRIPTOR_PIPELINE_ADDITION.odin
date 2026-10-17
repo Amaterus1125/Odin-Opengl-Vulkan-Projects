@@ -1,4 +1,4 @@
-// WARNING - FROM NOW ON ADDITIONS ONLY (not a standalone file)
+// WARNING - FROM NOW ON ADDITIONS ONLY (not a standalone file) , also will not have any executable 
 // Paste everything below into your existing 009 or 010 file from chapter 2, UNDER your existing helper procs and ABOVE main. There is no `package` line and no old code repeated here.
 
 // ALSO THIS FIEL JSUT TAKES 009 TEXTURE/MODEL LOADING AND 010 DESCRIPTOR SETS AND COMBINE THEM TOGETHER (I HAVE BEEN DOING THIS FOR ALL MY LAST FILES) 
