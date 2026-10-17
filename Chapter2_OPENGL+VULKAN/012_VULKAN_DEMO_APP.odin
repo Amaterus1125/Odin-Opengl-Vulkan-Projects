@@ -40,4 +40,50 @@ And a struct called VulkanRenderDevice (this is "vkDev" in the book) with these 
 	swapchain, swapchain_images: []vk.Image, semaphore, render_semaphore
 */
 
+// PART 1 - USING MESH FEOMETRY DATA UN VULKAN (FROM 011) 
+/* Same programmable vertex pulling (PVP) idea as our OpenGL 008 file, no vertex attributes. The shader gets the raw
+vertices AND the raw indices as storage buffers (SSBOs) and looks things up itself, we use cgltf, exactly as in 008. */
 
+VertexData :: struct {
+pos: [3]f32,
+tc:  [2]f32,
+}
+
+/*BUG FIX vs 011: the old struct had a field called `vertex_offset` but the code below writes `mesh.index_size`,
+so it would not compile. The correct fields are vertex_size, index_offset and index_size. */
+MeshBuffer :: struct {
+buffer: vk.Buffer, // one buffer holding vertices first and then indices
+memory: vk.DeviceMemory,
+vertex_size:  vk.DeviceSize, // size of the vertex section in bytes
+index_offset: vk.DeviceSize, // where the index section starts inside the buffer
+index_size:   vk.DeviceSize, // size of the index section in bytes
+}
+
+STORAGE_OFFSET_ALIGNMENT :: 256
+
+create_textured_vertex_buffer :: proc(
+device: vk.Device,
+physical_device: vk.PhysicalDevice,
+command_pool: vk.CommandPool,
+graphics_queue: vk.Queue,
+filename: cstring, // "data/rubber_duck/scene.gltf" ) -> (mesh: MeshBuffer, ok: bool) {
+options: cgltf.options
+data, parse_result := cgltf.parse_file(options, filename)
+if parse_result != .success {
+fmt.println("Unable to load", filename)
+return {}, false
+}
+defer cgltf.free(data)
+if cgltf.load_buffers(options, data, filename) != .success { return {}, false }
+
+// use only the first primitive of the first mesh
+prim := data.meshes[0].primitives[0]
+pos_acc, tc_acc: ^cgltf.accessor
+for attr in prim.attributes {
+#partial switch attr.type {
+case .position: pos_acc = attr.data
+case .texcoord: tc_acc = attr.data
+}
+}
+
+if pos_acc == nil { return {}, false }
