@@ -244,3 +244,40 @@ main() -> init GLFW, create the window, run init_vulkan(), loop calling draw_ove
 init_vulkan() -> instance, debug, surface, device, shaders, duck mesh, texture, depth buffer, descriptors, pipeline
 draw_overlay() -> every frame: acquire a swapchain image, update the mvp matrix, record + submit commands, present
 The "overlay" in the name is because the geometry shader draws a wireframe on top of the textured duck. */
+
+// window size and these are untyped constants so they work as u32, i32 or f32 wherever we use them
+SCREEN_WIDTH :: 1280
+SCREEN_HEIGHT :: 720
+
+VulkanState :: struct {
+instance: vk.Instance,
+messenger: vk.DebugUtilsMessengerEXT, // validation layer messages get printed through this
+surface: vk.SurfaceKHR, // the link between vulkan and the glfw window
+
+// shader modules: vertex pulls the mesh, geometry makes the wireframe, fragment applies the texture
+vert_shader: vk.ShaderModule,
+frag_shader: vk.ShaderModule,
+geom_shader: vk.ShaderModule,
+mesh: MeshBuffer, // duck vertices + indices in one storage buffer
+// one uniform buffer (holding the mvp matrix) perr swapchain image, so we never overwrite one the gpu is still reading
+uniform_buffers: []vk.Buffer,
+uniform_buffers_memory: []vk.DeviceMemory,
+
+// the duck texture
+texture_image: vk.Image,
+texture_memory: vk.DeviceMemory,
+texture_view: vk.ImageView,
+texture_sampler: vk.Sampler,
+
+// depth buffer, so near parts of the duck hide far parts
+depth_image: vk.Image,
+depth_memory: vk.DeviceMemory,
+depth_view: vk.ImageView,
+descriptor_pool: vk.DescriptorPool,
+descriptor_set_layout: vk.DescriptorSetLayout,
+descriptor_sets:  []vk.DescriptorSet, // one per swapchain image
+render_pass: vk.RenderPass,
+pipeline_layout: vk.PipelineLayout,
+graphics_pipeline: vk.Pipeline,
+framebuffers: []vk.Framebuffer, // one per swapchain image
+}
