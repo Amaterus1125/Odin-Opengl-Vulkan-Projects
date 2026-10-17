@@ -54,7 +54,7 @@ The repo has 9 chapters, loosely following the order of the *3D Graphics Renderi
 | Chapter | Focus | Status |
 |---|---|---|
 | 1 | Basic OpenGL and Odin: windows, shaders, first 3D | 🟢 Done |
-| 2 | OpenGL and Vulkan: getting started, mesh loading, first textures | 🟡 In progress |
+| 2 | OpenGL and Vulkan: getting started, mesh loading, first textures | 🟢 Done |
 | 3 | User interaction and productivity tools: UI, profiling, camera | 🟡 In progress |
 | 4 | Working with geometry data | ⚪ Planned |
 | 5 | Physically based rendering with the glTF2 shading model | ⚪ Planned |
