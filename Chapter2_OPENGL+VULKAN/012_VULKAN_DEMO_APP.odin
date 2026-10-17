@@ -460,3 +460,66 @@ pClearValues  = &clear_values[0],
 }
 vk.CmdBeginRenderPass(cmd, &render_pass_info, .INLINE)
 
+vk.CmdBindPipeline(cmd, .GRAPHICS, vk_state.graphics_pipeline)
+// bind the descriptor set for this image: mvp + vertices + indices + texture
+vk.CmdBindDescriptorSets(cmd, .GRAPHICS, vk_state.pipeline_layout, 0, 1, &vk_state.descriptor_sets[image_index], 0, nil)
+
+/* programmable vertex pulling - there is no vertex buffer bound so we just say "draw N vertices" where N is the index
+ count, and the vertex shader uses gl_VertexIndex to look up the index and then the vertex in the storage buffers. */
+index_count := u32(vk_state.mesh.index_size / size_of(u32))
+vk.CmdDraw(cmd, index_count, 1, 0, 0)
+vk.CmdEndRenderPass(cmd)
+return vk.EndCommandBuffer(cmd) == .SUCCESS
+}
+
+
+// draw_overlay: does the bulk of the rendering job, called once per frame
+
+draw_overlay :: proc() -> bool {
+// Acquire the next available image from the swapchain. `vk_dev.semaphore` gets signalled when the image is ready.
+image_index: u32
+vk_check(vk.AcquireNextImageKHR(vk_dev.device, vk_dev.swapchain, max(u64), vk_dev.semaphore, vk.Fence(0), &image_index))
+// reset the command pool: this throws away all old recorded commands so we can record fresh ones
+vk_check(vk.ResetCommandPool(vk_dev.device, vk_dev.command_pool, {}))
+
+// fill in the uniform buffer. Rotate the model around the vertical axis, like the OpenGL examples in the previous chapter.
+width, height := glfw.GetFramebufferSize(window)
+ratio := f32(width) / f32(height)
+
+/*the C++ builds this as: m1 = rotate( translate(I, (0, 0.5, -1.5)) * rotate(I, pi, (1,0,0)), time, (0,1,0) )
+glm::rotate(m, a, axis) means m * R(a, axis), so in matrix form that is: Translate * RotateX(pi) * RotateY(time)
+- RotateX(pi) flips the duck upside down, which cancels out Vulkan's upside-down Y axis
+-Translate moves it a bit up and away from the camera
+-RotateY(time) is the spinning */
+translate := linalg.matrix4_translate_f32({0.0, 0.5, -1.5})
+flip_y := linalg.matrix4_rotate_f32(linalg.PI, {1, 0, 0})
+spin := linalg.matrix4_rotate_f32(f32(glfw.GetTime()), {0, 1, 0})
+m1 := translate * flip_y * spin // in Odin `*` between matrices is real matrix multiplication
+
+
+// 45 degrees field of view. (The book passes 45.0f straight into glm::perspective, which is why we convert to radians here.)
+	// If the duck looks cut off or inside-out, try flip_z_axis = false on the end of this call, it depends on your depth setup.
+	p := linalg.matrix4_perspective_f32(linalg.to_radians(f32(45.0)), ratio, 0.1, 1000.0)
+
+	ubo := UniformBuffer{mvp = p * m1}
+	update_frame_uniform_buffer(image_index, ubo)
+
+	// 3. Fill in the command buffer (see fill_command_buffer above)
+	if !fill_command_buffer(image_index) { return false }
+
+/* 4. Submit the command buffer to the graphics queue like  -wait on `semaphore` (the image is ready) but only at the COLOR_ATTACHMENT_OUTPUT stage, so the GPU can
+start vertex work early and only has to wait before it actually writes pixels 
+- signal `render_semaphore` when rendering is done */
+wait_stages := vk.PipelineStageFlags{.COLOR_ATTACHMENT_OUTPUT}
+submit_info := vk.SubmitInfo{
+sType = .SUBMIT_INFO,
+waitSemaphoreCount   = 1,
+pWaitSemaphores  = &vk_dev.semaphore,
+pWaitDstStageMask  = &wait_stages,
+commandBufferCount   = 1,
+pCommandBuffers  = &vk_dev.command_buffers[image_index],
+signalSemaphoreCount = 1,
+pSignalSemaphores = &vk_dev.render_semaphore,
+}
+vk_check(vk.QueueSubmit(vk_dev.graphics_queue, 1, &submit_info, vk.Fence(0)))
+
