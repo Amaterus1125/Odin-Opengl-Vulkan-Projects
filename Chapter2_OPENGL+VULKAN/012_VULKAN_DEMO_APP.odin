@@ -395,3 +395,16 @@ if !ok { return false }
 // Create the depth buffer
 vk_state.depth_image, vk_state.depth_memory, vk_state.depth_view, ok = create_depth_resources(&vk_dev, SCREEN_WIDTH, SCREEN_HEIGHT)
 if !ok { return false } 
+
+
+/* 9. descriptor pool + sets (PART 2 above), render pass, pipeline layout and the graphics pipeline.
+ pool counts are PER swapchain image: 1 uniform buffer, 2 storage buffers (vertices + indices), 1 texture sampler. */
+vk_state.descriptor_pool, ok = create_descriptor_pool(vk_dev.device, u32(len(vk_dev.swapchain_images)), 1, 2, 1)
+if !ok { return false }
+
+vk_state.descriptor_set_layout, vk_state.descriptor_sets, ok = create_descriptor_set(
+vk_dev.device, vk_state.descriptor_pool, vk_state.uniform_buffers, size_of(UniformBuffer),
+vk_state.mesh, vk_state.texture_sampler, vk_state.texture_view,
+)
+if !ok { return false }
+
