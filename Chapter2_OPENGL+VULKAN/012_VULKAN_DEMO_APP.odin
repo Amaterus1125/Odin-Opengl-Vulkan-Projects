@@ -87,21 +87,6 @@ case .position: pos_acc = attr.data
 case .texcoord: tc_acc = attr.data
 }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 count := int(pos_acc.count)
 positions := make([]f32, count * 3)
 texcoords := make([]f32, count * 2) // stays zeros if the model has no UVs
