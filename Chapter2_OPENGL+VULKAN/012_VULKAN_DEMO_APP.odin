@@ -239,4 +239,8 @@ return layout, sets, true
 
 
 // PART 3 - THE VK02 DEMO APP - RENDERING THE RUBBER DUCK (NEWER PART HEHE) - ALSO CHAPTER 2 LAST PART 
-
+/* The earlier recipes set up Vulkan without drawing anything. Now we put it all together:
+main() -> init GLFW, create the window, run init_vulkan(), loop calling draw_overlay(), then clean up
+init_vulkan() -> instance, debug, surface, device, shaders, duck mesh, texture, depth buffer, descriptors, pipeline
+draw_overlay() -> every frame: acquire a swapchain image, update the mvp matrix, record + submit commands, present
+The "overlay" in the name is because the geometry shader draws a wireframe on top of the textured duck. */
