@@ -600,3 +600,15 @@ window = glfw.CreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "VulkanApp", nil, nil)
 if window == nil { os.exit(1) }
 defer glfw.DestroyWindow(window)
 glfw.SetKeyCallback(window, key_callback)
+
+// Set up everything Vulkan, then run the main loop until the window is closed, then clean up
+if !init_vulkan() {
+fmt.eprintln("init_vulkan failed")
+os.exit(1)
+}
+for !glfw.WindowShouldClose(window) {
+draw_overlay()
+glfw.PollEvents()
+}
+terminate_vulkan()
+}
