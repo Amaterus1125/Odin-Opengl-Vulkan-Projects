@@ -445,4 +445,18 @@ sType = .COMMAND_BUFFER_BEGIN_INFO,
 flags = {.SIMULTANEOUS_USE},
 }
 if vk.BeginCommandBuffer(cmd, &begin_info) != .SUCCESS { return false }
+// what to clear the attachments to: white background, and depth = 1.0 (the farthest possible value)
+clear_values := [2]vk.ClearValue{
+{color = {float32 = {1.0, 1.0, 1.0, 1.0}}},
+{depthStencil = {depth = 1.0, stencil = 0}},
+}
+render_pass_info := vk.RenderPassBeginInfo{
+sType = .RENDER_PASS_BEGIN_INFO,
+renderPass = vk_state.render_pass,
+framebuffer = vk_state.framebuffers[image_index],
+renderArea  = {offset = {0, 0}, extent = {SCREEN_WIDTH, SCREEN_HEIGHT}},
+clearValueCount = u32(len(clear_values)),
+pClearValues  = &clear_values[0],
+}
+vk.CmdBeginRenderPass(cmd, &render_pass_info, .INLINE)
 
