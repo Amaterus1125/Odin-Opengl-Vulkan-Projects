@@ -433,3 +433,16 @@ vk_state.framebuffers, ok = create_color_and_depth_framebuffers(
 return ok
 }
 
+// fill_command_buffer: record the drawing commands for ONE swapchain image
+
+/* we record only the buffer we are about to submit (image_index) instead of all of them, because that's the only one we use this frame. */
+fill_command_buffer :: proc(image_index: u32) -> bool {
+cmd := vk_dev.command_buffers[image_index]
+
+// SIMULTANEOUS_USE - the buffer may be resubmitted while a previous submit of it is still pending
+begin_info := vk.CommandBufferBeginInfo{
+sType = .COMMAND_BUFFER_BEGIN_INFO,
+flags = {.SIMULTANEOUS_USE},
+}
+if vk.BeginCommandBuffer(cmd, &begin_info) != .SUCCESS { return false }
+
