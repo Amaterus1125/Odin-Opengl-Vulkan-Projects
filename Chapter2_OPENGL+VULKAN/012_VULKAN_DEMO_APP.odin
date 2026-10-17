@@ -523,3 +523,20 @@ pSignalSemaphores = &vk_dev.render_semaphore,
 }
 vk_check(vk.QueueSubmit(vk_dev.graphics_queue, 1, &submit_info, vk.Fence(0)))
 
+// Present the rendered image on screen, but only after render_semaphore says rendering has finished
+present_info := vk.PresentInfoKHR{
+sType   = .PRESENT_INFO_KHR,
+waitSemaphoreCount = 1,
+pWaitSemaphores  = &vk_dev.render_semaphore,
+swapchainCount = 1,
+pSwapchains = &vk_dev.swapchain,
+pImageIndices = &image_index,
+}
+vk_check(vk.QueuePresentKHR(vk_dev.graphics_queue, &present_info))
+
+// wait until the GPU is completely done. Very simple and slow, but it means we never touch something the GPU still uses.
+vk_check(vk.DeviceWaitIdle(vk_dev.device))
+return true
+}
+
+// terminate_vulkan - destroy everything in the REVERSE order we created it (the book does this in the termination stage)
