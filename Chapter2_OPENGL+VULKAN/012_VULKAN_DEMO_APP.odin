@@ -336,3 +336,33 @@ update_frame_uniform_buffer :: proc(image_index: u32, ubo: UniformBuffer) {
 	vk.UnmapMemory(vk_dev.device, vk_state.uniform_buffers_memory[image_index])
 }
 
+
+// init_vulkan: all the long setup code from the previous recipes, in order
+
+
+init_vulkan :: proc() -> bool {
+ok: bool
+
+// 1. Create the Vulkan instance, then load the instance level function pointers (this replaces what Volk does in C++),then set up the debug callbacks (validation layer messages).
+vk_state.instance, ok = create_instance()
+if !ok { return false }
+vk.load_proc_addresses_instance(vk_state.instance)
+vk_state.messenger, ok = setup_debug_callbacks(vk_state.instance)
+if !ok { return false }
+
+// Create a window surface attached to the GLFW window and our Vulkan instance
+if glfw.CreateWindowSurface(vk_state.instance, window, nil, &vk_state.surface) != .SUCCESS { return false }
+
+// Initialise the render device (physical + logical device, queues, swapchain, command pool, semaphores).We turn on geometryShader because the wireframe overlay is made by a geometry shader.
+features := vk.PhysicalDeviceFeatures{geometryShader = true}
+if !init_vulkan_render_device(&vk_dev, vk_state.instance, vk_state.surface, SCREEN_WIDTH, SCREEN_HEIGHT, features) { return false }
+vk.load_proc_addresses_device(vk_dev.device) // device-level function pointers (skip if your init already does this)
+
+// Create shader modules for the vertex, fragment and geometry shaders. Odin has no built-in glslang, so these are PRE-COMPILED SPIR-V files. Compile them once with glslangValidator -V VK02.vert -o VK02.vert.spv   (same for .frag and .geom)
+vk_state.vert_shader, ok = create_shader_module(vk_dev.device, "data/shaders/chapter03/VK02.vert.spv")
+if !ok { return false }
+vk_state.frag_shader, ok = create_shader_module(vk_dev.device, "data/shaders/chapter03/VK02.frag.spv")
+if !ok { return false }
+vk_state.geom_shader, ok = create_shader_module(vk_dev.device, "data/shaders/chapter03/VK02.geom.spv")
+if !ok { return false }
+
