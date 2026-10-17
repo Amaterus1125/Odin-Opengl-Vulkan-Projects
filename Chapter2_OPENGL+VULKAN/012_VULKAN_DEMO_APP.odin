@@ -540,3 +540,42 @@ return true
 }
 
 // terminate_vulkan - destroy everything in the REVERSE order we created it (the book does this in the termination stage)
+
+terminate_vulkan :: proc() {
+vk.DeviceWaitIdle(vk_dev.device) // never destroy something the GPU might still be using
+
+for fb in vk_state.framebuffers { vk.DestroyFramebuffer(vk_dev.device, fb, nil) }
+vk.DestroyPipeline(vk_dev.device, vk_state.graphics_pipeline, nil)
+vk.DestroyPipelineLayout(vk_dev.device, vk_state.pipeline_layout, nil)
+vk.DestroyRenderPass(vk_dev.device, vk_state.render_pass, nil)
+
+// destroying the pool frees all the descriptor sets that came from it
+vk.DestroyDescriptorPool(vk_dev.device, vk_state.descriptor_pool, nil)
+vk.DestroyDescriptorSetLayout(vk_dev.device, vk_state.descriptor_set_layout, nil)
+
+vk.DestroyImageView(vk_dev.device, vk_state.depth_view, nil)
+vk.DestroyImage(vk_dev.device, vk_state.depth_image, nil)
+vk.FreeMemory(vk_dev.device, vk_state.depth_memory, nil)
+
+vk.DestroySampler(vk_dev.device, vk_state.texture_sampler, nil)
+vk.DestroyImageView(vk_dev.device, vk_state.texture_view, nil)
+vk.DestroyImage(vk_dev.device, vk_state.texture_image, nil)
+vk.FreeMemory(vk_dev.device, vk_state.texture_memory, nil)
+
+for i in 0 ..< len(vk_state.uniform_buffers) {
+destroy_buffer(vk_dev.device, vk_state.uniform_buffers[i], vk_state.uniform_buffers_memory[i])
+}
+destroy_buffer(vk_dev.device, vk_state.mesh.buffer, vk_state.mesh.memory)
+
+vk.DestroyShaderModule(vk_dev.device, vk_state.vert_shader, nil)
+vk.DestroyShaderModule(vk_dev.device, vk_state.frag_shader, nil)
+vk.DestroyShaderModule(vk_dev.device, vk_state.geom_shader, nil)
+
+// device, swapchain, command pool, semaphores (from the earlier recipe)
+destroy_vulkan_render_device(&vk_dev)
+
+vk.DestroySurfaceKHR(vk_state.instance, vk_state.surface, nil)
+vk.DestroyDebugUtilsMessengerEXT(vk_state.instance, vk_state.messenger, nil)
+vk.DestroyInstance(vk_state.instance, nil)
+}
+
