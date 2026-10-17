@@ -310,3 +310,21 @@ glfw.SetWindowShouldClose(w, true)
 }
 
 // UNIFORM BUFFERS - CREATE ONE PER SWAPCHAIN IMAGE , AND A PROC TO WRITE THE MVP MATRIX INTO ONE OF THEM 
+create_frame_uniform_buffers :: proc() -> bool {
+image_count := len(vk_dev.swapchain_images)
+vk_state.uniform_buffers = make([]vk.Buffer, image_count)
+vk_state.uniform_buffers_memory = make([]vk.DeviceMemory, image_count)
+
+for i in 0 ..< image_count {
+ok: bool
+
+	// HOST_VISIBLE + HOST_COHERENT = the CPU can write to it directly every frame with no extra flushing
+	vk_state.uniform_buffers[i], vk_state.uniform_buffers_memory[i], ok = create_buffer(
+	vk_dev.device, vk_dev.physical_device, size_of(UniformBuffer),
+     {.UNIFORM_BUFFER}, {.HOST_VISIBLE, .HOST_COHERENT}, 
+)
+if !ok { return false }
+}
+return true
+}
+
