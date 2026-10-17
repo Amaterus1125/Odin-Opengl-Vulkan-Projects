@@ -281,3 +281,32 @@ pipeline_layout: vk.PipelineLayout,
 graphics_pipeline: vk.Pipeline,
 framebuffers: []vk.Framebuffer, // one per swapchain image
 }
+
+window : glfw.WindowHandle 
+vk_state : VulkanState
+vk_dev : VulkanRenderDevice 
+
+vk_check :: proc(result: vk.Result , loc := #caller_location) {
+if result != .SUCCESS { 
+fmt.eprintln("VULKAN ERROR:" , result , "at" , loc) 
+os.exit(1) 
+} }
+
+//builds one entry of the pipeline shader list 
+shader_stage_info :: proc(stage :vk.ShaderStageFlags , module : vk.ShaderModule , entry : cstring) -> vk.PipelineShaderCreateInfo {
+return { 
+sType  = .PIPELINE_SHADER_STAGE_CREATE_INFO,
+stage  = stage,
+module = module,
+pName  = entry, // the function name inside the shader, always "main" for GLSL  (opengl shader language can be used for vulkan) 
+} }
+
+//GLFW keyboard callback , we only did esc to close the window
+// It has to be `proc "c"` because GLFW is a C library calling back into us.  (VERY IMPORTANT) 
+key_callback :: proc "c" (w: glfw.WindowHandle, key, scancode, action, mods: i32) {
+if key == glfw.KEY_ESCAPE && action == glfw.PRESS {
+glfw.SetWindowShouldClose(w, true)
+}
+}
+
+// UNIFORM BUFFERS - CREATE ONE PER SWAPCHAIN IMAGE , AND A PROC TO WRITE THE MVP MATRIX INTO ONE OF THEM 
