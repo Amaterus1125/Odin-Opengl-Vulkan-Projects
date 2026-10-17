@@ -408,3 +408,11 @@ vk_state.mesh, vk_state.texture_sampler, vk_state.texture_view,
 )
 if !ok { return false }
 
+// this is the only render pass in the app, so it is both the "first" and the "last" one andd it clears color + depth
+// at the start and leaves the image ready for presenting at the end
+vk_state.render_pass, ok = create_color_and_depth_render_pass(
+vk_dev.device, true,
+RenderPassCreateInfo{clear_color = true, clear_depth = true, flags = {.First, .Last}},
+)
+if !ok { return false }
+
