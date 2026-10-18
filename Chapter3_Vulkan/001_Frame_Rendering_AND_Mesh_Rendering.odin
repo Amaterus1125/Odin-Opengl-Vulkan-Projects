@@ -126,4 +126,8 @@ renderer_base_destroy :: proc(self: ^RendererBase) {
 for i in 0 ..< len(self.uniform_buffers) {
 destroy_buffer(self.device, self.uniform_buffers[i], self.uniform_buffers_memory[i])
 }
-
+delete(self.uniform_buffers)
+delete(self.uniform_buffers_memory)
+vk.DestroyDescriptorSetLayout(self.device, self.descriptor_set_layout, nil)
+vk.DestroyDescriptorPool(self.device, self.descriptor_pool, nil) // also frees the sets that came from it
+delete(self.descriptor_sets)
