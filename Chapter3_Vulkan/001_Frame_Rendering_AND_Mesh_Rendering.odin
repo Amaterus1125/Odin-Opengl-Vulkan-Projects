@@ -19,3 +19,9 @@ last part - move the image into the ready to present layout using VulkanFinish
 Every layer is an object that owns its own pipeline, render pass, framebuffers, descriptor sets and buffers, and can
 record its commands into a command buffer. Then drawing a frame is just - "for each layer, ask it to record commands".
 
+Odin has no classes, so we use two Odin tools instead - 
+1. STRUCT EMBEDDING with `using`: ModelRenderer contains a Renderer which contains a RendererBase, and `using` makes all their fields available directly (model.render_pass works, no model.base.render_pass needed).
+2. PROCEDURE POINTERS: the "virtual function" fill_command_buffer is just a field holding a proc. Each layer sets its own proc when it is created.
+That is why every layer struct has `using renderer - Renderer` as its FIRST field: then a pointer to the layer and a pointer
+to its Renderer are the same address, and we can safely cast between them inside the layer procs. */
+
