@@ -121,3 +121,9 @@ vk.CmdBindDescriptorSets(command_buffer, .GRAPHICS, self.pipeline_layout, 0, 1, 
 /* The destructor: cleans up every object in the base. In a bigger app you would wrap each resource so this happens
 automatically; here we do it by hand. Note this assumes the objects were actually allocated by the layer's init. Layers that never made some of them
 (e.g. VulkanClear has no descriptor pool) are still fine - Vulkan ignores destroy calls on null handles. */
+
+renderer_base_destroy :: proc(self: ^RendererBase) {
+for i in 0 ..< len(self.uniform_buffers) {
+destroy_buffer(self.device, self.uniform_buffers[i], self.uniform_buffers_memory[i])
+}
+
