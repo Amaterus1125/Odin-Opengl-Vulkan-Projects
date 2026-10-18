@@ -138,3 +138,7 @@ vk.DestroyPipelineLayout(self.device, self.pipeline_layout, nil)
 vk.DestroyPipeline(self.device, self.graphics_pipeline, nil)
 }
 
+// the `destroy` entry for layers that need nothing beyond the base cleanup (VulkanClear and VulkanFinish)
+renderer_destroy_base_only :: proc(self: ^Renderer) {
+renderer_base_destroy(&self.base)
+}
