@@ -107,4 +107,13 @@ screen_rect := vk.Rect2D{
 offset = {0, 0},
 extent = {width = self.framebuffer_width, height = self.framebuffer_height},
 }
-
+render_pass_info := vk.RenderPassBeginInfo{
+sType = .RENDER_PASS_BEGIN_INFO,
+renderPass  = self.render_pass,
+framebuffer = self.swapchain_framebuffers[current_image],
+renderArea  = screen_rect,
+}
+vk.CmdBeginRenderPass(command_buffer, &render_pass_info, .INLINE)
+vk.CmdBindPipeline(command_buffer, .GRAPHICS, self.graphics_pipeline)
+vk.CmdBindDescriptorSets(command_buffer, .GRAPHICS, self.pipeline_layout, 0, 1, &self.descriptor_sets[current_image], 0, nil)
+}
