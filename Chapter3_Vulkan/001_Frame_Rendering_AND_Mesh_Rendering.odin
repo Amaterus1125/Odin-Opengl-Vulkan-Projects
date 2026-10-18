@@ -117,3 +117,7 @@ vk.CmdBeginRenderPass(command_buffer, &render_pass_info, .INLINE)
 vk.CmdBindPipeline(command_buffer, .GRAPHICS, self.graphics_pipeline)
 vk.CmdBindDescriptorSets(command_buffer, .GRAPHICS, self.pipeline_layout, 0, 1, &self.descriptor_sets[current_image], 0, nil)
 }
+
+/* The destructor: cleans up every object in the base. In a bigger app you would wrap each resource so this happens
+automatically; here we do it by hand. Note this assumes the objects were actually allocated by the layer's init. Layers that never made some of them
+(e.g. VulkanClear has no descriptor pool) are still fine - Vulkan ignores destroy calls on null handles. */
