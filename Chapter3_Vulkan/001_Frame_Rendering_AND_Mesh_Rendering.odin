@@ -92,6 +92,11 @@ ok : bool
 self.uniform_buffer[i], self.uniform_buffer_memory[i], ok = create_buffer( 
 vk_dev.device , vk_dev.physical_device , uniform_data_size , {.UNIFORM_BUFFER}, {.HOST_VISIBLE, .HOST_COHERENT},
 } 
-
+if !ok {
+fmt.println("Cannot create uniform buffer, now what should we do")
+return false
+}}
+return true
+}
 
 
