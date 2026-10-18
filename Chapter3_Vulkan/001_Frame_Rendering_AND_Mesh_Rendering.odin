@@ -131,3 +131,10 @@ delete(self.uniform_buffers_memory)
 vk.DestroyDescriptorSetLayout(self.device, self.descriptor_set_layout, nil)
 vk.DestroyDescriptorPool(self.device, self.descriptor_pool, nil) // also frees the sets that came from it
 delete(self.descriptor_sets)
+for fb in self.swapchain_framebuffers { vk.DestroyFramebuffer(self.device, fb, nil) }
+delete(self.swapchain_framebuffers)
+vk.DestroyRenderPass(self.device, self.render_pass, nil)
+vk.DestroyPipelineLayout(self.device, self.pipeline_layout, nil)
+vk.DestroyPipeline(self.device, self.graphics_pipeline, nil)
+}
+
