@@ -27,7 +27,7 @@ to its Renderer are the same address, and we can safely cast between them inside
 
 // PART 1 - RendererBase - the state every layer shares
 
-/* one vulkan image together with its memory and view (the VulkanImage) and a zeroed VulkanImage() means "no image" (image = 0) , which VulkanClear/VulkanFinish use to use to mean "no depth buffer"
+/* one vulkan image together with its memory and view (the VulkanImage) and a zeroed VulkanImage() means "no image" (image = 0) , which VulkanClear/VulkanFinish use to use to mean "no depth buffer" */
 
 VulkanImage :: struct { 
 image : vk.Image ,
