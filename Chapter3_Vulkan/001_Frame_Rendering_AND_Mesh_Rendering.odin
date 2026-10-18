@@ -99,4 +99,12 @@ return false
 return true
 }
 
+/* Marks the start of a render pass and binds the graphics pipeline + the descriptor set of the current swapchain image.
+   Derived layers call this first, then record their own draw commands, then call vk.CmdEndRenderPass. */
+
+renderer_begin_render_pass :: proc(self : ^RendererBase , command_buffer: vk.CommandBuffer , current_image : u32) { 
+screen_rect := vk.Rect2D{
+offset = {0, 0},
+extent = {width = self.framebuffer_width, height = self.framebuffer_height},
+}
 
