@@ -29,3 +29,36 @@ to its Renderer are the same address, and we can safely cast between them inside
 
 /* one vulkan image together with its memory and view (the VulkanImage) and a zeroed VulkanImage() means "no image" (image = 0) , which VulkanClear/VulkanFinish use to use to mean "no depth buffer"
 
+VulkanImage :: struct { 
+image : vk.Image ,
+memory : vk.DeviceMemory, 
+view : vk.ImageView , 
+} 
+
+//  RendererBase class (its fields - the functions are free procs below)
+RendererBase :: struct 
+device : vk.Device , 
+//each layer uses the framebuffer size to start its render pass 
+framebuffer_width : u32 , 
+framebuffer_height : u32 , 
+
+// all textures and buffers reach the shaders through descriptor , one set per swapchain image ,to define them we also need the layout and the pool they come from 
+descriptor_set_layout : vk.DescriptorSetLayout , 
+descriptor_pool: vk.DescriptorPool , 
+descriptor_sets : []vk.DescriptorSet, 
+
+//each command buffer works on its own framebuffer (one per swapchain image) 
+swapchain_framebuffers : []vk.DescriptorSet , 
+
+//the depth buffer , it is only refrenced once , so it can be shared between layers , whoever created it destroys it too 
+depth_texture : VulkanImage , 
+render_pass : vk.RenderPass , 
+pipeline_layout : vk.PipelineLayout , 
+graphics_pipeline : vk.Pipeline, 
+
+//each swapchain image has its own uniform buffer (so we never owerwrite one the gpu is still reading) 
+uniform_buffers: []vk.Buffer, 
+uniform_buffers_memory: []vk.DeviceMemory , 
+} 
+
+
