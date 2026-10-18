@@ -25,3 +25,7 @@ Odin has no classes, so we use two Odin tools instead -
 That is why every layer struct has `using renderer - Renderer` as its FIRST field: then a pointer to the layer and a pointer
 to its Renderer are the same address, and we can safely cast between them inside the layer procs. */
 
+// PART 1 - RendererBase - the state every layer shares
+
+/* one vulkan image together with its memory and view (the VulkanImage) and a zeroed VulkanImage() means "no image" (image = 0) , which VulkanClear/VulkanFinish use to use to mean "no depth buffer"
+
