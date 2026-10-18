@@ -61,4 +61,13 @@ uniform_buffers: []vk.Buffer,
 uniform_buffers_memory: []vk.DeviceMemory , 
 } 
 
+/* the "interface" every layer implements (pure virtual fillCommandBuffer + the destructor), a layer fills in these two procedure pointers when it is initialized */ 
+Renderer :: struct { 
+using base: RenderBase , 
+
+//injects a stream of vulkan commands into the given command buffer , current_image picks the uniform buffer , descriptor set and framebuffer that belong to one of the swapchain images 
+fill_command_buffer : proc(self : ^Renderer , command_buffer : vk.CommandBuffer , current_image : u32) , 
+//free everythings this laeyr allocated , odin has no destructors sp we call it by hand
+destroy : proc(self: ^Renderer) , 
+} 
 
