@@ -79,4 +79,19 @@ self.framebuffer_height = vk_dev.framebuffer_height
 self.depth_texture = depth_texture 
 } 
 
+// allocates the uniform buffer , a simple loop over all swapchain images , one buffer each 
+
+renderer_create_uniform_buffers :: proc(self: ^RendererBase, vk_dev: ^VulkanRenderDevice, uniform_data_size: vk.DeviceSize) -> bool {
+image_count := len(vk_dev.swapchain_image) 
+self.uniform_buffer = make([]vk.Buffer , image_count) 
+self.uniform_buffer_memory - make([]vk.DeviceMemory , image_count) 
+
+for i in ..< image_count { 
+ok : bool 
+// HOST_VISIBLE + HOST_COHERENT - the CPU can write the data every frame with no extra flushing
+self.uniform_buffer[i], self.uniform_buffer_memory[i], ok = create_buffer( 
+vk_dev.device , vk_dev.physical_device , uniform_data_size , {.UNIFORM_BUFFER}, {.HOST_VISIBLE, .HOST_COHERENT},
+} 
+
+
 
