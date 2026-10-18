@@ -71,3 +71,12 @@ fill_command_buffer : proc(self : ^Renderer , command_buffer : vk.CommandBuffer 
 destroy : proc(self: ^Renderer) , 
 } 
 
+// the constructor part of the base class , remember the device , the framebuffer size and the (possibly empty) depth buffer 
+renderer_base_init :: proc(self : ^RendererBase , vk_dev : ^VulkanRendererDevice , depth_texture : VulkanImage ) { 
+self.device = vk_dev.device 
+self.framebuffer_width = vk_dev.framebuffer_width
+self.framebuffer_height = vk_dev.framebuffer_height 
+self.depth_texture = depth_texture 
+} 
+
+
