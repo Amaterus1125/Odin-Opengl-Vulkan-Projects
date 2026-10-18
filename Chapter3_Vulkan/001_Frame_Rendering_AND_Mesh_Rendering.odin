@@ -142,3 +142,5 @@ vk.DestroyPipeline(self.device, self.graphics_pipeline, nil)
 renderer_destroy_base_only :: proc(self: ^Renderer) {
 renderer_base_destroy(&self.base)
 }
+
+// PART 2 - VulkanClear - the first layer, clears the colour (and depth) buffer
