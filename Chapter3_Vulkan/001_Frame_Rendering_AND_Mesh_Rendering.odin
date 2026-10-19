@@ -205,3 +205,5 @@ vk_dev.device, depth_texture.image != 0,
 RenderPassCreateInfo{clear_color = false, clear_depth = false, flags = {.Last}}, // Last = end of the frame, must not clear or u won't see anything 
 )
 
+
+
