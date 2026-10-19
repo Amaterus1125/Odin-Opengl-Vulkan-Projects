@@ -188,3 +188,20 @@ pClearValues = &clear_values[0],
 vk.CmdBeginRenderPass(command_buffer, &render_pass_info, .INLINE)
 vk.CmdEndRenderPass(command_buffer) // nothing in between: the clear happens by itself
 }
+
+//VulkanFinish - last layer , moves the image to the present layout 
+VulkanFinish :: struct { 
+using renderer: Renderer, 
+} 
+
+vulkan_finish_init :: proc(self: ^VulkanFinish, vk_dev: ^VulkanRenderDevice, depth_texture: VulkanImage) -> bool {
+renderer_base_init(&self.base, vk_dev, depth_texture)
+self.fill_command_buffer = vulkan_finish_fill_command_buffer
+self.destroy = renderer_destroy_base_only
+
+ok: bool
+self.render_pass, ok = create_color_and_depth_render_pass(
+vk_dev.device, depth_texture.image != 0,
+RenderPassCreateInfo{clear_color = false, clear_depth = false, flags = {.Last}}, // Last = end of the frame, must not clear or u won't see anything 
+)
+
