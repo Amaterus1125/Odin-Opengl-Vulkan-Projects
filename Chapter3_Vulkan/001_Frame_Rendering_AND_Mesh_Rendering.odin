@@ -144,3 +144,24 @@ renderer_base_destroy(&self.base)
 }
 
 // PART 2 - VulkanClear - the first layer, clears the colour (and depth) buffer
+
+VulkanClear :: struct { 
+using renderer : Renderer , //always keep first 
+should_clear_depth : bool , // false if there is no depth image 
+} 
+
+vulkan_clear_init :: proc(self : ^VulkanClear , vk_dev : ^VulkanRenderDevice , depth_texture : VulkanImage) -> bool { 
+renderer_base_init (&self.base , vk_dev , depth_texture) 
+self.should_clear_depth = depth_texture.image != 0 
+self.fill_command_buffer = vulkan_clear_fill_command_buffer 
+self.destroy = renderer_destroy_base_only 
+
+ok: bool 
+self.render_pass , ok = create_color_and_depth_render_pass( 
+vk_dev.device , self.should_clear_depth, 
+RenderPassCreateInfo(clear_color = true , clear_depth = true , flags = {.First} } ,
+} 
+if !ok { 
+fmt.println("VulkanClear has faield to create render pass") 
+return false 
+} 
