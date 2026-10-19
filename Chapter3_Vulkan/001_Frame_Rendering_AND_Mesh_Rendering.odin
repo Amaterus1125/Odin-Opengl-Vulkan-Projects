@@ -165,3 +165,15 @@ if !ok {
 fmt.println("VulkanClear has faield to create render pass") 
 return false 
 } 
+self.swapchain_framebuffers, ok = create_color_and_depth_framebuffers(
+vk_dev, self.render_pass, depth_texture.view, self.framebuffer_width, self.framebuffer_height,
+)
+return ok
+}
+
+vulkan-clear_fill_command_buffer :: proc(r: ^Renderer , command_buffer: vk.CommandBuffer,current_image: u32) { 
+self := cast(^VulkanClear)r
+clear_values := [2]vk.ClearValue{ 
+{color = {float32 = {1.0, 1.0 ,1.0 ,1.0} }} //for white background 
+{depthStencil = {depth = 1.0 , stencil =0 }}. //1.0 means farthest 
+} 
