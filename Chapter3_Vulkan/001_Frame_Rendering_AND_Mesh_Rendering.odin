@@ -177,3 +177,14 @@ clear_values := [2]vk.ClearValue{
 {color = {float32 = {1.0, 1.0 ,1.0 ,1.0} }} //for white background 
 {depthStencil = {depth = 1.0 , stencil =0 }}. //1.0 means farthest 
 } 
+render_pass_info := vk.RenderPassBeginInfo{
+sType = .RENDER_PASS_BEGIN_INFO,
+renderPass = self.render_pass,
+framebuffer = self.swapchain_framebuffers[current_image],
+renderArea = {offset = {0, 0}, extent = {width = self.framebuffer_width, height = self.framebuffer_height}},
+clearValueCount = self.should_clear_depth ? 2 : 1, // use both values only if clearing depth
+pClearValues = &clear_values[0],
+}
+vk.CmdBeginRenderPass(command_buffer, &render_pass_info, .INLINE)
+vk.CmdEndRenderPass(command_buffer) // nothing in between: the clear happens by itself
+}
