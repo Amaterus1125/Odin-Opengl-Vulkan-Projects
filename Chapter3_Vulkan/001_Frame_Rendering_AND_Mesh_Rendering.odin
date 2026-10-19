@@ -204,6 +204,14 @@ self.render_pass, ok = create_color_and_depth_render_pass(
 vk_dev.device, depth_texture.image != 0,
 RenderPassCreateInfo{clear_color = false, clear_depth = false, flags = {.Last}}, // Last = end of the frame, must not clear or u won't see anything 
 )
-
+if !ok {
+fmt.println("VulkanFinish: failed to create render pass")
+return false
+}
+self.swapchain_framebuffers, ok = create_color_and_depth_framebuffers(
+vk_dev, self.render_pass, depth_texture.view, self.framebuffer_width, self.framebuffer_height,
+)
+return ok
+}
 
 
