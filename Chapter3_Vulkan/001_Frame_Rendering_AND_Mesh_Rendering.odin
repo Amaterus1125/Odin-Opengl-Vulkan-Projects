@@ -227,3 +227,10 @@ vk.CmdBeginRenderPass(command_buffer, &render_pass_info, .INLINE)
 vk.CmdEndRenderPass(command_buffer)
 }
 
+// ModelRenderer - the duck from 012 as a layer 
+ModelRenderer :: struct {
+using renderer: Renderer, // keep always FIRST
+mesh: MeshBuffer, // vertices + indices in one storage buffer (from 011 of chapter 2)
+texture: VulkanImage,
+texture_sampler: vk.Sampler,
+}
