@@ -214,4 +214,16 @@ vk_dev, self.render_pass, depth_texture.view, self.framebuffer_width, self.frame
 return ok
 }
 
+// same as Clear but with no clear values. 
+vulkan_finish_fill_command_buffer :: proc(r: ^Renderer, command_buffer: vk.CommandBuffer, current_image: u32) {
+self := cast(^VulkanFinish)r
+render_pass_info := vk.RenderPassBeginInfo{
+sType  = .RENDER_PASS_BEGIN_INFO,
+renderPass  = self.render_pass,
+framebuffer = self.swapchain_framebuffers[current_image],
+renderArea  = {offset = {0, 0}, extent = {width = self.framebuffer_width, height = self.framebuffer_height}},
+}
+vk.CmdBeginRenderPass(command_buffer, &render_pass_info, .INLINE)
+vk.CmdEndRenderPass(command_buffer)
+}
 
