@@ -313,3 +313,18 @@ vert_module , ok = create_pipeline_layout (vk_dev.device , vert_shader_file)
 if !ok { return false }
 frag_module, ok = create_shader_module(vk_dev.device, frag_shader_file)
 if !ok { return false }
+
+stages := make([dynamic]vk.PipelineShaderStageCreateInfo) 
+defer delete(stages) 
+append(&stages , shader_stage_info({.VERTEX} , vert_module , "main")) 
+append(&stages , shader_stage_info({.FRAGMENT} , frag_module , "main")) 
+if len(geom_shader_file) > 0 { 
+geom_module , ok = create_shader_module ( vk_dev.device , geom_shader_file) 
+if !ok {return false} 
+append(&stages , shader_stage_info({.GEOMETRY} , geom_module , "main")) 
+} 
+
+self.graphics_pipeline , ok = create_graphics_pipeline ( 
+bk_dev.device , self.framebuffer_width , self.framebuffer_height , 
+self.render_pass , self.pipeline_layout , stages[:] , 
+) 
