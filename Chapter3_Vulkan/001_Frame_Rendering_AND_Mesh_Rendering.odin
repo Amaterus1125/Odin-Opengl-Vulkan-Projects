@@ -304,3 +304,12 @@ self.render_pass, ok = create_color_and_depth_render_pass(vk_dev.device, true, R
 if !ok { return false }
 
 // 7 - pipeline layout + pipeline 
+
+self.pipeline_layout , ok = create_pipeline_layout(vk_dev.device , vert_shader_file ) 
+if !ok {return false } 
+
+vert_module , frag_module , geom_module : vk.ShaderModule 
+vert_module , ok = create_pipeline_layout (vk_dev.device , vert_shader_file) 
+if !ok { return false }
+frag_module, ok = create_shader_module(vk_dev.device, frag_shader_file)
+if !ok { return false }
