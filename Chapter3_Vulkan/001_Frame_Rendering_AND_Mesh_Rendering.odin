@@ -351,3 +351,16 @@ mem.copy(mapped , data , data_size)
 vk.UnmapMemory(vk_dev.device , self.uniform_buffers_memory[current_image]) 
 } 
 
+//does the actual rendering , start the pass , emit one draw command , end the pass 
+model_renderer_fill_command_buffer :: proc(r : ^Renderer , command_buffer: vk.CommandBuffer , current_image : u32 ) { 
+self := cast(^ModelRenderer)r 
+renderer_begin_render_pass(&self.base , command_buffer , current_image) 
+
+/* PVP again , no vertex buffer is bound , we just say - draw N vertices , with N = number of indices , 
+the vertex shader uses gl_VertexIndex to look the index up and then the vertex in the storage buffers  */
+index_count :+ u32(self.mesh.index_size / size_of(u32)) 
+vk.CmdDraw(command_buffer, index_count, 1,0,0) 
+vk.CmdEndRenderPass(command_buffer) 
+} 
+
+
