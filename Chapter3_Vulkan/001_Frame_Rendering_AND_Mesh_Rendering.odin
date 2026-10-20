@@ -298,3 +298,9 @@ vk_dev.device, self.descriptor_pool, self.uniform_buffers, uniform_data_size,
 self.mesh, self.texture_sampler, self.texture.view,
 )
 if !ok { return false }
+
+// 6 - render pass: empty flags = a MIDDLE layer, It doesn't clear (VulkanClear already did) and it isn't the last pass either (VulkanFinish handles the present layout).
+self.render_pass, ok = create_color_and_depth_render_pass(vk_dev.device, true, RenderPassCreateInfo{})
+if !ok { return false }
+
+// 7 - pipeline layout + pipeline 
