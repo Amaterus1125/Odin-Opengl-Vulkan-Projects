@@ -363,4 +363,19 @@ vk.CmdDraw(command_buffer, index_count, 1,0,0)
 vk.CmdEndRenderPass(command_buffer) 
 } 
 
+/* destroys what ModelRenderer owns on top of the base: texture, sampler, mesh buffer and the depth buffer
+ (VulkanClear and VulkanFinish only borrowed the depth buffer, so it is destroyed here, by its owner) */
+model_renderer_destroy :: proc(r: ^Renderer) {
+self := cast(^ModelRenderer)r
+vk.DestroySampler(self.device, self.texture_sampler, nil)
+vk.DestroyImageView(self.device, self.texture.view, nil)
+vk.DestroyImage(self.device, self.texture.image, nil)
+vk.FreeMemory(self.device, self.texture.memory, nil)
+destroy_buffer(self.device, self.mesh.buffer, self.mesh.memory)
+vk.DestroyImageView(self.device, self.depth_texture.view, nil)
+vk.DestroyImage(self.device, self.depth_texture.image, nil)
+vk.FreeMemory(self.device, self.depth_texture.memory, nil)
+renderer_base_destroy(&self.base)
+}
+
 
