@@ -328,3 +328,9 @@ self.graphics_pipeline , ok = create_graphics_pipeline (
 bk_dev.device , self.framebuffer_width , self.framebuffer_height , 
 self.render_pass , self.pipeline_layout , stages[:] , 
 ) 
+// the pipeline keeps its own copy of the compiled shaders, so the modules can be destroyed right away  (destroying a null handle, e.g. no geometry shader, is harmless)
+vk.DestroyShaderModule(vk_dev.device, vert_module, nil)
+vk.DestroyShaderModule(vk_dev.device, frag_module, nil)
+vk.DestroyShaderModule(vk_dev.device, geom_module, nil)
+if !ok { return false }
+
