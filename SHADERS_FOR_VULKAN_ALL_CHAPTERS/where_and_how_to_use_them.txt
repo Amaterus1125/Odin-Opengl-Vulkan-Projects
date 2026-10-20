@@ -1,1 +1,92 @@
+SHADERS FOR VULKAN - WHERE AND HOW TO USE THEM
 
+
+What this folder is
+
+These are the GLSL shader files used by the Vulkan demos in this repo. Vulkan can't read
+GLSL text directly. It only accepts SPIR-V (.spv), so every shader has to be compiled once
+before the Odin code can load it.
+
+    SHADERS_FOR_VULKAN_ALL_CHAPTERS/
+        Chapter-2/   shaders for the Chapter 2 Vulkan demo (the rubber duck with a wireframe overlay)
+        Chapter-3/   shaders for the Chapter 3 renderer layers (clear / model / finish)
+        where_and_how_to_use_them.txt   (this file)
+
+The shader source files end in .vert (vertex), .frag (fragment) and .geom (geometry).
+
+
+
+The Odin code loads shaders using paths relative to the folder you RUN the program from
+(normally the repo root). So create this layout next to your .odin file:
+
+    data/
+      shaders/
+        chapter03/     <- copy everything from Chapter-2/ here   (used by the VK02 demo, init_vulkan)
+        chapter04/     <- copy everything from Chapter-3/ here   (used by ModelRenderer, model_renderer_init)
+
+The folder names chapter03 and chapter04 are just what the Odin code currently says
+(for example "data/shaders/chapter03/VK02.vert.spv"). If you would rather use the folder names
+from this repo, change the path strings in the Odin code instead. Either way works, as long as
+the two match.
+
+
+Step 2: Compile each shader to SPIR-V
+
+You need a GLSL compiler. Either of these works, and both come with the Vulkan SDK
+(https://vulkan.lunarg.com/):
+
+    glslangValidator     (package "glslang" on Arch / most Linux distros)
+    glslc                (package "shaderc" on Arch / most Linux distros)
+
+Compile one file:
+
+    glslangValidator -V VK02.vert -o VK02.vert.spv
+
+Compile every shader in the current folder at once.
+
+Linux / macOS (bash):
+
+    for f in *.vert *.frag *.geom; do glslangValidator -V "$f" -o "$f.spv"; done
+
+Windows (PowerShell):
+
+    Get-ChildItem *.vert,*.frag,*.geom | ForEach-Object { glslangValidator -V $_.Name -o "$($_.Name).spv" }
+
+The output name matters: VK02.vert becomes VK02.vert.spv. That is exactly what the Odin code asks
+for. Keep the original .vert/.frag/.geom files next to the .spv files so you can recompile when you
+edit a shader.
+
+If a file in this folder already ends in .spv, skip this step for it.
+
+
+Step 3: Run from the repo root
+
+    odin run <your_file>.odin -file
+
+If you get "cannot open file" or a shader module error, the program can't find the .spv. Check two things:
+  1. You are running from the folder that contains data/.
+  2. The path in the Odin code matches the real file name exactly (including .spv).
+
+
+Things that must match between a shader and the Odin code
+
+If one of these is wrong the shader still compiles, but Vulkan's validation layer complains or the
+screen shows garbage:
+
+  - Binding numbers:  0 = uniform buffer (mvp matrix)
+                      1 = storage buffer (vertices)
+                      2 = storage buffer (indices)
+                      3 = texture sampler
+  - Vertex layout:    5 floats, 20 bytes (x, y, z, u, v). Use plain floats in the shader struct, not vec3,
+                      because vec3 gets padded to 16 bytes and breaks the layout.
+  - Vertex index:     use gl_VertexIndex, not gl_VertexID (that is the OpenGL name).
+  - Stages:           the stage in the Odin code (VERTEX / FRAGMENT / GEOMETRY) must match the file type.
+
+
+Credits and license
+
+These shaders come from the book "3D Graphics Rendering Cookbook" by Sergey Kosarevsky and
+Viktor Latypov (Packt, 2021). The book's code repository is MIT licensed:
+https://github.com/PacktPublishing/3D-Graphics-Rendering-Cookbook
+
+If you reuse them, keep their MIT copyright notice with the files.
