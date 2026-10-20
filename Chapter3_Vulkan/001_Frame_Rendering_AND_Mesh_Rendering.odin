@@ -280,3 +280,5 @@ self.depth_texture.image , self.depth_texture.memory , self.depth_texture.view ,
 vk_dev , self.framebuffer_width , self.framebuffer_height , ) 
 if !ok { return false } 
 
+// 4 - uniform buffers (one per swapchain image) - see renderer_create_uniform_buffers
+if !renderer_create_uniform_buffers(&self.base, vk_dev, uniform_data_size) { return false }
