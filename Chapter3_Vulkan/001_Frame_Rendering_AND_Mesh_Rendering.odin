@@ -282,3 +282,19 @@ if !ok { return false }
 
 // 4 - uniform buffers (one per swapchain image) - see renderer_create_uniform_buffers
 if !renderer_create_uniform_buffers(&self.base, vk_dev, uniform_data_size) { return false }
+
+
+/* 5 - descriptor pool + sets - Pool sizes per image: 1 uniform buffer, 2 storage buffers (vertices + indices), 1 sampler
+create_descriptor_set (from 011) is exactly the book's ModelRenderer::createDescriptorSet. Its four bindings -
+0 = uniform buffer (the mvp matrix) vertex stage
+1 = storage buffer (vertices) vertex stage
+2 = storage buffer (indices) vertex stage
+3 = combined image sampler (the texture) fragment stage
+The mesh data never changes, so this only needs to run once, here, from the constructor */ 
+self.descriptor_pool, ok = create_descriptor_pool(vk_dev.device, u32(len(vk_dev.swapchain_images)), 1, 2, 1)
+if !ok { return false }
+self.descriptor_set_layout, self.descriptor_sets, ok = create_descriptor_set(
+vk_dev.device, self.descriptor_pool, self.uniform_buffers, uniform_data_size,
+self.mesh, self.texture_sampler, self.texture.view,
+)
+if !ok { return false }
