@@ -256,3 +256,12 @@ self.fill_command_buffer = model_renderer_fill_command_buffer
 self.destroy = model_renderer_destroy 
 ok : bool 
 
+// 1 - load mesh , we reuse the mesh loading code from chapter 2 in create_texture_vertex_buffer in 011/012 
+self.mesh, ok = create_textured_vertex_buffer(
+vk_dev.device, vk_dev.physical_device, vk_dev.command_pool, vk_dev.graphics_queue, model_file,
+)
+if !ok {
+fmt.println("ModelRenderer: create_textured_vertex_buffer failed")
+return false
+}
+
