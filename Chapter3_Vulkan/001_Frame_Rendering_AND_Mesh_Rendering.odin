@@ -265,7 +265,7 @@ fmt.println("ModelRenderer: create_textured_vertex_buffer failed")
 return false
 }
 
-// 2. the texture image, image view and sampler, also from chapter 3
+// 2 - the texture image, image view and sampler, also from chapter 3
 if !create_texture_image(
 vk_dev.device, vk_dev.physical_device, vk_dev.command_pool, vk_dev.graphics_queue,
 texture_file, &self.texture.image, &self.texture.memory,
@@ -274,3 +274,9 @@ self.texture.view, ok = create_image_view(vk_dev.device, self.texture.image, .R8
 if !ok { return false }
 self.texture_sampler, ok = create_texture_sampler(vk_dev.device)
 if !ok { return false }
+
+// 3 - finally the depth buffer , VulkanClear and VulkanFinish get it from us later (model.depth_texture) so all layers share it 
+self.depth_texture.image , self.depth_texture.memory , self.depth_texture.view , ok = create_depth_resources ( 
+vk_dev , self.framebuffer_width , self.framebuffer_height , ) 
+if !ok { return false } 
+
