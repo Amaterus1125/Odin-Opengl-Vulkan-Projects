@@ -228,9 +228,31 @@ vk.CmdEndRenderPass(command_buffer)
 }
 
 // ModelRenderer - the duck from 012 as a layer 
+/* A more general version of what we did by hand in 012 (VulkanState + draw_overlay), One ModelRenderer owns a mesh (vertices + indices in ONE storage buffer) and ONE texture,
+Limiting a model to a single texture keeps this chapter simple and proper materials come in chapter 7. It also lets us render several models in one scene, but it isn't efficient for lots of meshes*/
+
 ModelRenderer :: struct {
 using renderer: Renderer, // keep always FIRST
 mesh: MeshBuffer, // vertices + indices in one storage buffer (from 011 of chapter 2)
 texture: VulkanImage,
 texture_sampler: vk.Sampler,
 }
+
+/* model_renderer_init builds everything , it takes the shader fiels as arguments , passes "" as geom_shader_file if we don't want to see a geometry shader 
+, i think there are some SPIR-V files (.spv) as in 012 or in Assets folder */ 
+
+model_renderer_init :: proc ( 
+self : ^ModelRenderer , 
+vk_dev : ^VulkanRenderDevice ,
+model_file : cstring , 
+texture_file : string , 
+uniform_data_size : string ,
+vert_shader_file : string , 
+frag_shader_file : string , 
+geom_shader_file : string ,  ) -> bool { 
+//the base starts with an empty depth image , ModelRenderer creates the depth buffer itself furthur down the line 
+renderer_base_init(&self.base , vk_dev , VulkanImage{}) 
+self.fill_command_buffer = model_renderer_fill_command_buffer 
+self.destroy = model_renderer_destroy 
+ok : bool 
+
