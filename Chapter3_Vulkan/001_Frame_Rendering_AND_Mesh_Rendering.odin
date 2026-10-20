@@ -334,3 +334,20 @@ vk.DestroyShaderModule(vk_dev.device, frag_module, nil)
 vk.DestroyShaderModule(vk_dev.device, geom_module, nil)
 if !ok { return false }
 
+// 8 - framebuffers - each joins one swapchian image (color) with our shared depth buffer 
+self.swapchain_framebuffer , ok = create_color_depth_framebuffers( 
+vk_dev , self.render_pass , self.depth_texture.view , self.framebuffer_width , self.framebuffer_height , 
+) 
+return ok 
+} 
+
+/* the new function this layer adds to the interface , change the per frame uniform data (here the premultiplied mvp matrix) 
+we in odin just map the current swapchain imahe buffer , copy the byted in and unmap , call this every frame before fill_command_buffer */ 
+
+model_renderer_update_uniform_buffer :: proc(self: ^ModelRenderer , vk_dev: ^VulkanRenderDevice , current_image: u32 , data : rawptr , data_size : int) { 
+mapped: rawptr 
+vk_check(vk.MapMemory(vk_dev.device , self.uniform_buffers_memory[current_image] , 0 , vk.DeviceSize(data_size) , {} , &mapped)) 
+mem.copy(mapped , data , data_size) 
+vk.UnmapMemory(vk_dev.device , self.uniform_buffers_memory[current_image]) 
+} 
+
