@@ -265,3 +265,12 @@ fmt.println("ModelRenderer: create_textured_vertex_buffer failed")
 return false
 }
 
+// 2. the texture image, image view and sampler, also from chapter 3
+if !create_texture_image(
+vk_dev.device, vk_dev.physical_device, vk_dev.command_pool, vk_dev.graphics_queue,
+texture_file, &self.texture.image, &self.texture.memory,
+) { return false }
+self.texture.view, ok = create_image_view(vk_dev.device, self.texture.image, .R8G8B8A8_UNORM, {.COLOR})
+if !ok { return false }
+self.texture_sampler, ok = create_texture_sampler(vk_dev.device)
+if !ok { return false }
