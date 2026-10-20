@@ -378,4 +378,32 @@ vk.FreeMemory(self.device, self.depth_texture.memory, nil)
 renderer_base_destroy(&self.base)
 }
 
+// HOW THE LAYERS GETS USED - A SKETCH ONLY 
+/* clear - VulkanClear 
+   model - ModelRenderer 
+   finish - VulkanFinish 
 
+the model goes first because it creates the shared depth buffer  - 
+
+model_renderer_init(&model, &vk_dev,
+"data/rubber_duck/scene.gltf", "data/rubber_duck/textures/Duck_baseColor.png", size_of(UniformBuffer),
+"data/shaders/chapter04/VK01.vert.spv", "data/shaders/chapter04/VK01.frag.spv", "")
+vulkan_clear_init(&clear, &vk_dev, model.depth_texture)
+vulkan_finish_init(&finish, &vk_dev, model.depth_texture)
+
+the order in this array is the order of the layers on the screen - 
+layers := [3]^Renderer{&clear.renderer, &model.renderer, &finish.renderer}
+
+every frame, after vk.BeginCommandBuffer(cmd, ...)
+ubo := UniformBuffer{mvp = p * m1}
+model_renderer_update_uniform_buffer(&model, &vk_dev, image_index, &ubo, size_of(UniformBuffer))
+for layer in layers {
+layer.fill_command_buffer(layer, cmd, image_index)
+}
+
+then vk.EndCommandBuffer(cmd), submit and present as in draw_overlay
+
+shutdown (after vk.DeviceWaitIdle)
+	
+for layer in layers { layer.destroy(layer) }
+*/
