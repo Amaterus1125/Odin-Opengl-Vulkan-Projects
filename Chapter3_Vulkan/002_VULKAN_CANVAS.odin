@@ -46,3 +46,23 @@ sampler: vk.Sampler, view: vk.ImageView,) -> (layout: vk.DescriptorSetLayout, se
 image_count := len(uniform_buffers)
 has_texture := sampler != 0
 
+	bindings := make([dynamic]vk.DescriptorSetLayoutBinding)
+	defer delete(bindings)
+	append(&bindings, descriptor_set_layout_binding(0, .UNIFORM_BUFFER, {.VERTEX, .FRAGMENT}))
+	append(&bindings, descriptor_set_layout_binding(1, .STORAGE_BUFFER, {.VERTEX}))
+	if has_texture { append(&bindings, descriptor_set_layout_binding(2, .COMBINED_IMAGE_SAMPLER, {.FRAGMENT})) }
+layout_info := vk.DescriptorSetLayoutCreateInfo{
+sType = .DESCRIPTOR_SET_LAYOUT_CREATE_INFO, bindingCount = u32(len(bindings)), pBindings = raw_data(bindings),}
+	if vk.CreateDescriptorSetLayout(device, &layout_info, nil, &layout) != .SUCCESS { return {}, nil, false }
+
+layouts := make([]vk.DescriptorSetLayout, image_count)
+defer delete(layouts)
+for i in 0 ..< image_count { layouts[i] = layout }
+alloc_info := vk.DescriptorSetAllocateInfo{
+sType = .DESCRIPTOR_SET_ALLOCATE_INFO, descriptorPool = descriptor_pool,
+descriptorSetCount = u32(image_count), pSetLayouts = raw_data(layouts),
+}
+sets = make([]vk.DescriptorSet, image_count)
+if vk.AllocateDescriptorSets(device, &alloc_info, raw_data(sets)) != .SUCCESS { return layout, sets, false }
+
+
