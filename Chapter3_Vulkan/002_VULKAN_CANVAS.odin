@@ -20,5 +20,6 @@ what we doing - "Implementing an immediate mode drawing canvas", the Dear ImGui 
  2. ONE storage buffer PER swapchain image, so the CPU never overwrites data the GPU is still reading (no sync needed).
  3. Canvas draw count = number of vertices (2 per line), all in one vk.CmdDraw. No lines = no render pass at all.
  4. It's a MIDDLE layer (render pass flags = {}). Layer order for the full app - clear -> model -> canvas -> ui (015) -> finish
- 5. Per frame - canvas_clear -> canvas_line(...)s -> canvas_update_buffer -> canvas_update_uniform_buffer.       */
+ 5. Per frame - canvas_clear -> canvas_line(...)s -> canvas_update_buffer -> canvas_update_uniform_buffer.  */
 
+// SHARED HELPERS 
