@@ -33,8 +33,16 @@ vk.UnmapMemory(device , memory)
 } 
 
 /* Descriptor sets for layers that read a PER-IMAGE storage buffer (011's create_descriptor_set shares ONE mesh buffer between
-   all images, so it can't be reused here). Bindings:
-	0 = uniform buffer   (visible to vertex AND fragment, so it works whichever stage the shader reads it in)
-	1 = storage buffer   (the vertices)
-	2 = texture sampler  (fragment) - ONLY added when you pass a sampler. The canvas has no texture, the MicroUI layer (015) does. */
+all images, so it can't be reused here). Bindings:
+0 = uniform buffer   (visible to vertex AND fragment, so it works whichever stage the shader reads it in)
+1 = storage buffer   (the vertices)
+2 = texture sampler  (fragment) - ONLY added when you pass a sampler. The canvas has no texture, the MicroUI layer (015) does. */
+
+create_geometry_descriptor_set :: proc( 
+device: vk.Device, descriptor_pool: vk.DescriptorPool,
+uniform_buffers: []vk.Buffer, ubo_size: vk.DeviceSize,
+storage_buffers: []vk.Buffer, vertex_range: vk.DeviceSize,
+sampler: vk.Sampler, view: vk.ImageView,) -> (layout: vk.DescriptorSetLayout, sets: []vk.DescriptorSet, ok: bool) {
+image_count := len(uniform_buffers)
+has_texture := sampler != 0
 
