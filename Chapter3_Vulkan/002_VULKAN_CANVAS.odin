@@ -23,3 +23,18 @@ what we doing - "Implementing an immediate mode drawing canvas", the Dear ImGui 
  5. Per frame - canvas_clear -> canvas_line(...)s -> canvas_update_buffer -> canvas_update_uniform_buffer.  */
 
 // SHARED HELPERS 
+
+/ map a memory block, copy `size` bytes in, unmap (uploadBufferData; used for every per-frame CPU -> GPU copy)
+upload_memory :: proc(device : vk.Device , memory: vk.DeviceMemory , offset : vk.DeviceSize , size : int) { 
+mapped : rawptr 
+vk_check(vk.MapMemory(device , memory , offset , vk.DeviceSize(size) , {} , &mapped)) 
+mem.copy(mapped , data , size) 
+vk.UnmapMemory(device , memory) 
+} 
+
+/* Descriptor sets for layers that read a PER-IMAGE storage buffer (011's create_descriptor_set shares ONE mesh buffer between
+   all images, so it can't be reused here). Bindings:
+	0 = uniform buffer   (visible to vertex AND fragment, so it works whichever stage the shader reads it in)
+	1 = storage buffer   (the vertices)
+	2 = texture sampler  (fragment) - ONLY added when you pass a sampler. The canvas has no texture, the MicroUI layer (015) does. */
+
