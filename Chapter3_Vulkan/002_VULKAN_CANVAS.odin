@@ -65,4 +65,9 @@ descriptorSetCount = u32(image_count), pSetLayouts = raw_data(layouts),
 sets = make([]vk.DescriptorSet, image_count)
 if vk.AllocateDescriptorSets(device, &alloc_info, raw_data(sets)) != .SUCCESS { return layout, sets, false }
 
+for i in 0 ..< image_count {
+ubo_info := vk.DescriptorBufferInfo{buffer = uniform_buffers[i], offset = 0, range = ubo_size}
+vertices_info := vk.DescriptorBufferInfo{buffer = storage_buffers[i], offset = 0, range = vertex_range}
+image_info := vk.DescriptorImageInfo{sampler = sampler, imageView = view, imageLayout = .SHADER_READ_ONLY_OPTIMAL}
+
 
