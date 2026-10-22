@@ -14,7 +14,7 @@
  create_descriptor_pool, vk_check, the clear / model / canvas / finish layers.
 
  /* 
-IMPORTS (at the top of your file):   import mu "vendor:microui"
+IMPORTS (at the top of your file): import mu "vendor:microui"
 ASSUMPTIONS (same style as before):
 a) create_graphics_pipeline has the optional params from 014 (topology, use_depth, use_blending, dynamic_scissor).
 b) create_color_and_depth_framebuffers accepts depth_view = 0 (no depth buffer on this layer).
