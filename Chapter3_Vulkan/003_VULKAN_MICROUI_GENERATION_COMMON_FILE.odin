@@ -345,7 +345,7 @@ upload_memory(vk_dev.device, self.storage_buffers_memory[current_image], 0, raw_
 
 // Shaders for this layer (save as mui.vert / mui.frag, then compile: glslangValidator -V mui.vert -o mui.vert.spv)
 
-*/
+/*
 MUI.VERT - 
 #version 460
 
