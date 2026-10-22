@@ -211,7 +211,7 @@ canvas_line(self, o2 - s1 / 2 * v1, o2 + s1 / 2 * v1, color)
 }
 }
 
-// VULKAN PART - GET THE LIST ONTO THE GPU AND DRAW IT 
+// VULKAN PART - GET THE LIST ONTO THE GPU AND DRAW IT  - really important if i want to come back and see how we make something upload to the GPU
 
 // copy this frame's lines into the GPU buffer of swapchain image `current_image`
 canvas_update_buffer :: proc(self : ^VulkanCanvas , vk_dev : ^VulkanRenderDevice , current_image : u32) { 
@@ -219,5 +219,12 @@ if len(self.lines) == 0 {return}
 upload_memory(vk_dev.device , self.storage_buffers_memory[current_image], 0 , raw_data(self.lines) , len(self.lines) * size_of(CanvasVertex) ) 
 } 
 
+// pack mvp + time into the uniform buffer of this image
+canvas_update_uniform_buffer :: proc(self: ^VulkanCanvas, vk_dev: ^VulkanRenderDevice, m: matrix[4, 4]f32, time: f32, current_image: u32) {
+	ubo := CanvasUniform{mvp = m, time = time}
+	upload_memory(vk_dev.device, self.uniform_buffers_memory[current_image], 0, &ubo, size_of(CanvasUniform))
+
+
+}
 
 
