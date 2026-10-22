@@ -148,3 +148,12 @@ self.descriptor_set_layout, self.descriptor_sets, ok = create_geometry_descripto
 vk_dev.device, self.descriptor_pool, self.uniform_buffers, size_of(matrix[4, 4]f32),self.storage_buffers, MUI_VERTEX_DATA_SIZE, self.atlas_sampler, self.atlas.view,)
 if !ok { return false }
 
+// middle layer, no depth
+self.render_pass, ok = create_color_and_depth_render_pass(vk_dev.device, false, RenderPassCreateInfo{})
+if !ok { return false }
+// triangles, no depth test, blending ON (text edges), dynamic scissor ON (a new clip rect per draw call)
+if !renderer_create_pipeline(&self.base, vk_dev, vert_file, frag_file, .TRIANGLE_LIST, false, true, true) { return false }
+
+self.swapchain_framebuffers, ok = create_color_and_depth_framebuffers(vk_dev, self.render_pass, 0, self.framebuffer_width, self.framebuffer_height)
+return ok
+}
