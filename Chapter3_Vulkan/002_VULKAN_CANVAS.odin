@@ -70,4 +70,14 @@ ubo_info := vk.DescriptorBufferInfo{buffer = uniform_buffers[i], offset = 0, ran
 vertices_info := vk.DescriptorBufferInfo{buffer = storage_buffers[i], offset = 0, range = vertex_range}
 image_info := vk.DescriptorImageInfo{sampler = sampler, imageView = view, imageLayout = .SHADER_READ_ONLY_OPTIMAL}
 
-
+writes := make([dynamic]vk.WriteDescriptorSet)
+defer delete(writes)
+append(&writes, vk.WriteDescriptorSet{sType = .WRITE_DESCRIPTOR_SET, dstSet = sets[i], dstBinding = 0, descriptorCount = 1, descriptorType = .UNIFORM_BUFFER, pBufferInfo = &ubo_info})
+append(&writes, vk.WriteDescriptorSet{sType = .WRITE_DESCRIPTOR_SET, dstSet = sets[i], dstBinding = 1, descriptorCount = 1, descriptorType = .STORAGE_BUFFER, pBufferInfo = &vertices_info})
+if has_texture {
+append(&writes, vk.WriteDescriptorSet{sType = .WRITE_DESCRIPTOR_SET, dstSet = sets[i], dstBinding = 2, descriptorCount = 1, descriptorType = .COMBINED_IMAGE_SAMPLER, pImageInfo = &image_info})
+}
+vk.UpdateDescriptorSets(device, u32(len(writes)), raw_data(writes), 0, nil)
+}
+return layout, sets, true
+}
