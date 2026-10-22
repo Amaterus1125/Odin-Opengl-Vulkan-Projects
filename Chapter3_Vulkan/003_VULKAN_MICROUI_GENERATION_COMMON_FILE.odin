@@ -274,15 +274,21 @@ mui_push_quad(self, v.rect, mu.default_atlas[mu.DEFAULT_ATLAS_WHITE], v.color)
 
 case ^mu.Command_Text:
 // one quad per character, cut out of the font atlas; advance by each glyph's width
-	dst := mu.Rect{v.pos.x, v.pos.y, 0, 0}
-	for ch in v.str {
-	if ch & 0xc0 == 0x80 { continue }
-	r := min(int(ch), 127)
-	src := mu.default_atlas[mu.DEFAULT_ATLAS_FONT + r]
-	dst.w = src.w
-		dst.h = src.h
-	mui_push_quad(self, dst, src, v.color)
+dst := mu.Rect{v.pos.x, v.pos.y, 0, 0}
+for ch in v.str {
+if ch & 0xc0 == 0x80 { continue }
+r := min(int(ch), 127)
+src := mu.default_atlas[mu.DEFAULT_ATLAS_FONT + r]
+dst.w = src.w
+dst.h = src.h
+mui_push_quad(self, dst, src, v.color)
 dst.x += dst.w
 }
 
+case ^mu.Command_Icon:
+// icons (window close button, checkmark, arrows) also live in the atlas; centre the icon inside its rect.
+// (if the compiler complains about this index, use int(v.id))
+src := mu.default_atlas[v.id]
+dst := mu.Rect{v.rect.x + (v.rect.w - src.w) / 2, v.rect.y + (v.rect.h - src.h) / 2, src.w, src.h}
+mui_push_quad(self, dst, src, v.color)
 
