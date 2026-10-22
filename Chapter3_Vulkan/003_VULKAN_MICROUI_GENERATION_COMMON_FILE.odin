@@ -246,3 +246,19 @@ batch_start^ = len(self.vertices)
 }
 }
 
+/* THE per-frame call. In order:
+1. run the user's UI (mu.begin -> ui_proc -> mu.end)
+2. walk MicroUI's command list and turn it into vertices + draw calls
+3. upload the vertices and the projection matrix to this swapchain image's buffers */
+mui_update :: proc(self: ^MuiRenderer, vk_dev: ^VulkanRenderDevice, current_image: u32) {
+// 1. build the UI
+mu.begin(self.ctx)
+self.ui_proc(self.ctx, self.user_data)
+mu.end(self.ctx)
+
+// 2. commands -> quads
+clear(&self.vertices)
+clear(&self.draw_calls)
+
+clip := mu.Rect{0, 0, i32(self.framebuffer_width), i32(self.framebuffer_height)} // start with the whole screen
+batch_start := 0
