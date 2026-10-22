@@ -262,3 +262,27 @@ clear(&self.draw_calls)
 
 clip := mu.Rect{0, 0, i32(self.framebuffer_width), i32(self.framebuffer_height)} // start with the whole screen
 batch_start := 0
+
+// ALL THIS FOR ATLAS FONT IN MICROUI TO RENDER IT AND IT'S TEXTURES 
+
+cmd: ^mu.Command
+for variant in mu.next_command_iterator(self.ctx, &cmd) {
+#partial switch v in variant {
+case ^mu.Command_Rect:
+// a plain rectangle = sample the atlas's white pixel and tint it
+mui_push_quad(self, v.rect, mu.default_atlas[mu.DEFAULT_ATLAS_WHITE], v.color)
+
+case ^mu.Command_Text:
+// one quad per character, cut out of the font atlas; advance by each glyph's width
+	dst := mu.Rect{v.pos.x, v.pos.y, 0, 0}
+	for ch in v.str {
+	if ch & 0xc0 == 0x80 { continue }
+	r := min(int(ch), 127)
+	src := mu.default_atlas[mu.DEFAULT_ATLAS_FONT + r]
+	dst.w = src.w
+		dst.h = src.h
+	mui_push_quad(self, dst, src, v.color)
+dst.x += dst.w
+}
+
+
