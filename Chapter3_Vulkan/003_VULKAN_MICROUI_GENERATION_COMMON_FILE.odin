@@ -213,4 +213,27 @@ self.mouse_down[i] = down
 }
 }
 
+// Batching - MicroUI commands -> triangles + draw calls
+
+// two triangles (6 vertices) for one rectangle: `dst` is where it goes on screen (pixels), `src` is the atlas region to sample
+mui_push_quad :: proc(self: ^MuiRenderer, dst, src: mu.Rect, color: mu.Color) {
+	if len(self.vertices) + 6 > MUI_MAX_VERTICES { return } // GPU buffer is full: drop the rest of this frame's UI
+
+// atlas pixel rect -> 0..1 texture coordinates
+u0 := f32(src.x) / f32(mu.DEFAULT_ATLAS_WIDTH)
+v0 := f32(src.y) / f32(mu.DEFAULT_ATLAS_HEIGHT)
+u1 := f32(src.x + src.w) / f32(mu.DEFAULT_ATLAS_WIDTH)
+v1 := f32(src.y + src.h) / f32(mu.DEFAULT_ATLAS_HEIGHT)
+x0 := f32(dst.x)
+y0 := f32(dst.y)
+x1 := f32(dst.x + dst.w)
+y1 := f32(dst.y + dst.h)
+c  := [4]u8{color.r, color.g, color.b, color.a}
+append(&self.vertices, MuiVertex{{x0, y0}, {u0, v0}, c}) // triangle 1
+append(&self.vertices, MuiVertex{{x1, y0}, {u1, v0}, c})
+append(&self.vertices, MuiVertex{{x0, y1}, {u0, v1}, c})
+append(&self.vertices, MuiVertex{{x1, y0}, {u1, v0}, c}) // triangle 2
+append(&self.vertices, MuiVertex{{x1, y1}, {u1, v1}, c})
+append(&self.vertices, MuiVertex{{x0, y1}, {u0, v1}, c})
+}
 
