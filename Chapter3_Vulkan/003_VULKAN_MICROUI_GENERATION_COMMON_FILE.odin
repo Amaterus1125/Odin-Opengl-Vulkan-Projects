@@ -171,3 +171,10 @@ x0 := clamp(dc.clip.x, 0, fb_w)
 y0 := clamp(dc.clip.y, 0, fb_h)
 x1 := clamp(dc.clip.x + dc.clip.w, 0, fb_w)
 y1 := clamp(dc.clip.y + dc.clip.h, 0, fb_h)
+if x1 <= x0 || y1 <= y0 { continue } // nothing visible inside this clip rect
+scissor := vk.Rect2D{offset = {x = x0, y = y0}, extent = {width = u32(x1 - x0), height = u32(y1 - y0)}}
+vk.CmdSetScissor(command_buffer, 0, 1, &scissor)
+vk.CmdDraw(command_buffer, dc.vertex_count, 1, dc.first_vertex, 0)
+}
+vk.CmdEndRenderPass(command_buffer)
+}
