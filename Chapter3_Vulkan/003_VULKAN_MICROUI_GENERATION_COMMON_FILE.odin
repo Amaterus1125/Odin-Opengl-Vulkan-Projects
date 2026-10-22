@@ -91,4 +91,33 @@ mui_text_width :: proc(font: mu.Font, str: string) -> (res: i32) {
 }
 mui_text_height :: proc(font: mu.Font) -> i32 { return 18 }
 
+mui_init :: proc(
+self: ^MuiRenderer, vk_dev: ^VulkanRenderDevice,
+ui_proc: MuiUiProc, user_data: rawptr, vert_file, frag_file: string,) -> bool {
+renderer_base_init(&self.base, vk_dev, VulkanImage{}) // no depth: the UI is drawn on top of everything
+self.fill_command_buffer = mui_fill_command_buffer
+self.destroy = mui_destroy
+self.ui_proc  = ui_proc
+self.user_data  = user_data
+
+// the MicroUI context
+self.ctx = new(mu.Context)
+mu.init(self.ctx)
+self.ctx.text_width  = mui_text_width
+self.ctx.text_height = mui_text_height
+
+ok : bool 
+image_count := len(vk_dev.swapchain_images) 
+// atlas is basically the 
+// the atlas: expand the 1-byte-per-pixel alpha bitmap to RGBA (white, alpha = bitmap) and upload it as a texture
+rgba := make([]u8, mu.DEFAULT_ATLAS_WIDTH * mu.DEFAULT_ATLAS_HEIGHT * 4)
+defer delete(rgba)
+for i in 0 ..< mu.DEFAULT_ATLAS_WIDTH * mu.DEFAULT_ATLAS_HEIGHT {
+rgba[i * 4 + 0] = 255
+rgba[i * 4 + 1] = 255
+rgba[i * 4 + 2] = 255
+rgba[i * 4 + 3] = mu.default_atlas_alpha[i]
+}
+
+
 
