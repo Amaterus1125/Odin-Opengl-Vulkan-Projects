@@ -119,5 +119,12 @@ rgba[i * 4 + 2] = 255
 rgba[i * 4 + 3] = mu.default_atlas_alpha[i]
 }
 
-
+if !create_texture_image_from_data(
+vk_dev.device, vk_dev.physical_device, vk_dev.command_pool, vk_dev.graphics_queue,
+raw_data(rgba), mu.DEFAULT_ATLAS_WIDTH, mu.DEFAULT_ATLAS_HEIGHT, .R8G8B8A8_UNORM,
+&self.atlas.image, &self.atlas.memory,) { return false }
+self.atlas.view, ok = create_image_view(vk_dev.device, self.atlas.image, .R8G8B8A8_UNORM, {.COLOR})
+if !ok { return false }
+self.atlas_sampler, ok = create_texture_sampler(vk_dev.device) // if the text looks blurry, make this sampler NEAREST
+if !ok { return false }
 
