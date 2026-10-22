@@ -188,3 +188,25 @@ append(&self.lines, CanvasVertex{position = p1, color = color})
 append(&self.lines, CanvasVertex{position = p2, color = color})
 }
 
+/* A wireframe plane spanned by v1 and v2, centred on `orig`: s1 x s2 in size, with n1 x n2 grid lines inside.
+`outline_color` is used for the 4 outer edges, `color` for the inner grid lines. Built only from canvas_line. */
+
+canvas_plane3d :: proc(self: ^VulkanCanvas, orig, v1, v2: [3]f32, n1, n2: int, s1, s2: f32, color, outline_color: [4]f32) {
+// the four outer lines
+canvas_line(self, orig - s1 / 2 * v1 - s2 / 2 * v2, orig - s1 / 2 * v1 + s2 / 2 * v2, outline_color)
+canvas_line(self, orig + s1 / 2 * v1 - s2 / 2 * v2, orig + s1 / 2 * v1 + s2 / 2 * v2, outline_color)
+canvas_line(self, orig - s1 / 2 * v1 + s2 / 2 * v2, orig + s1 / 2 * v1 + s2 / 2 * v2, outline_color)
+canvas_line(self, orig - s1 / 2 * v1 - s2 / 2 * v2, orig + s1 / 2 * v1 - s2 / 2 * v2, outline_color)
+
+// n1 "horizontal" and n2 "vertical" inner lines
+for ii in 1 ..< n1 {
+t  := (f32(ii) - f32(n1) / 2) * s1 / f32(n1)
+o1 := orig + t * v1
+canvas_line(self, o1 - s2 / 2 * v2, o1 + s2 / 2 * v2, color)
+}
+for ii in 1 ..< n2 {
+t  := (f32(ii) - f32(n2) / 2) * s2 / f32(n2)
+o2 := orig + t * v2
+canvas_line(self, o2 - s1 / 2 * v1, o2 + s1 / 2 * v1, color)
+}
+}
