@@ -140,3 +140,15 @@ ok: bool
 image_count := len(vk_dev.swapchain_images)
 
 //one geometry buffer per swapchain image , CPU writable 
+self.storage_buffers        = make([]vk.Buffer, image_count)
+self.storage_buffers_memory = make([]vk.DeviceMemory, image_count)
+for i in 0 ..< image_count {
+	self.storage_buffers[i], self.storage_buffers_memory[i], ok = create_buffer(
+	vk_dev.device, vk_dev.physical_device, CANVAS_MAX_LINES_DATA_SIZE,
+	{.STORAGE_BUFFER}, {.HOST_VISIBLE, .HOST_COHERENT},
+)
+if !ok {
+fmt.println("VulkanCanvas: create_buffer() failed")
+	return false
+ }
+}
