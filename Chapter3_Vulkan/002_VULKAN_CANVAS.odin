@@ -234,3 +234,12 @@ vk.CmdDraw(command_buffer, u32(len(self.lines)), 1, 0, 0)
 vk.CmdEndRenderPass(command_buffer)
 }
 
+canvas_destroy :: proc(r: ^Renderer) {
+self := cast(^VulkanCanvas)r
+for i in 0 ..< len(self.storage_buffers) { destroy_buffer(self.device, self.storage_buffers[i], self.storage_buffers_memory[i]) }
+delete(self.storage_buffers)
+delete(self.storage_buffers_memory)
+delete(self.lines)
+renderer_base_destroy(&self.base)
+}
+
