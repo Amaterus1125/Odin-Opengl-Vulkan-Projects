@@ -178,3 +178,20 @@ vk.CmdDraw(command_buffer, dc.vertex_count, 1, dc.first_vertex, 0)
 }
 vk.CmdEndRenderPass(command_buffer)
 }
+
+
+mui_destroy :: proc(r: ^Renderer) {
+self := cast(^MuiRenderer)r
+vk.DestroySampler(self.device, self.atlas_sampler, nil)
+vk.DestroyImageView(self.device, self.atlas.view, nil)
+vk.DestroyImage(self.device, self.atlas.image, nil)
+vk.FreeMemory(self.device, self.atlas.memory, nil)
+
+for i in 0 ..< len(self.storage_buffers) { destroy_buffer(self.device, self.storage_buffers[i], self.storage_buffers_memory[i]) }
+delete(self.storage_buffers)
+delete(self.storage_buffers_memory)
+delete(self.vertices)
+delete(self.draw_calls)
+free(self.ctx)
+renderer_base_destroy(&self.base)
+}
