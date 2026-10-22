@@ -291,4 +291,9 @@ case ^mu.Command_Icon:
 src := mu.default_atlas[v.id]
 dst := mu.Rect{v.rect.x + (v.rect.w - src.w) / 2, v.rect.y + (v.rect.h - src.h) / 2, src.w, src.h}
 mui_push_quad(self, dst, src, v.color)
-
+case ^mu.Command_Clip:
+// the clip rectangle changes: finish the draw call that used the OLD one, then switch
+mui_flush_batch(self, &batch_start, clip)
+clip = v.rect
+}}
+mui_flush_batch(self, &batch_start, clip) // the last run
