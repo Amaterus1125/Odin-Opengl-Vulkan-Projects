@@ -80,5 +80,15 @@ atlas_sampler: vk.Sampler,
 mouse_down: [3]bool, // previous left/right/middle button state, for press/release edges
 }
 
+// MicroUI asks us how wide / tall text is. Our font is the built-in atlas font: every glyph's width comes from the atlas.
+mui_text_width :: proc(font: mu.Font, str: string) -> (res: i32) {
+	for ch in str {
+		if ch & 0xc0 == 0x80 { continue } // skip UTF-8 continuation bytes
+		r := min(int(ch), 127)
+		res += i32(mu.default_atlas[mu.DEFAULT_ATLAS_FONT + r].w)
+	}
+	return
+}
+mui_text_height :: proc(font: mu.Font) -> i32 { return 18 }
 
 
