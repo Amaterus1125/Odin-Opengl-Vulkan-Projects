@@ -152,3 +152,39 @@ fmt.println("VulkanCanvas: create_buffer() failed")
 	return false
  }
 }
+
+if !renderer_create_uniform_buffers(&self.base, vk_dev, size_of(CanvasUniform)) { return false }
+
+// pool counts per image , 1 uniform , 1 storage , 0 samplers(no texture , no index buffers) 
+self.descriptor_pool, ok = create_descriptor_pool(vk_dev.device, u32(image_count), 1, 1, 0)
+if !ok { return false }
+self.descriptor_set_layout, self.descriptor_sets, ok = create_geometry_descriptor_set(
+vk_dev.device, self.descriptor_pool, self.uniform_buffers, size_of(CanvasUniform),
+self.storage_buffers, CANVAS_MAX_LINES_DATA_SIZE, 0, 0, // sampler 0 = no texture binding
+)
+if !ok { return false }
+
+// middle layer; uses the shared depth buffer
+self.render_pass, ok = create_color_and_depth_render_pass(vk_dev.device, true, RenderPassCreateInfo{})
+if !ok { return false }
+
+// LINE_LIST so every 2 vertices become one line; depth test on; blending on , depth test is one of the many test we can do 
+if !renderer_create_pipeline(&self.base, vk_dev, vert_file, frag_file, .LINE_LIST, true, true, false) { return false }
+self.swapchain_framebuffers, ok = create_color_and_depth_framebuffers(vk_dev, self.render_pass, depth.view, self.framebuffer_width, self.framebuffer_height)
+return ok
+}
+
+// THE NON VULKAN PART - BUILD UP THE LIST OF LINES - 
+
+canvas_clear :: proc(self : ^VulkanCanvas) { 
+clear(self.lines) 
+} 
+
+//add 2 points to the list , safety - ignores the line once the pre allocated gpu buffer would overflow bc it can only hold a max fixed amt of lines 
+
+canvas_line :: proc(self: ^VulkanCanvas , p1 , p2 : [3]f32 , color : [4]f32 ) { 
+if len(self.lines) + 2 > 2 * CANVAS_MAX_LINES_COUNT {return} 
+append(&self.lines, CanvasVertex{position = p1, color = color})
+append(&self.lines, CanvasVertex{position = p2, color = color})
+}
+
