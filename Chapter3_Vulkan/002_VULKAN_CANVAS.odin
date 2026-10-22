@@ -243,3 +243,22 @@ delete(self.lines)
 renderer_base_destroy(&self.base)
 }
 
+// HOW TO USE THE CANVAS (copy this pattern; the full app comes in the last recipe of the chapter) - IMPORTANT FOR LATER 
+/*
+canvas: VulkanCanvas
+
+setup (model first, it owns the depth buffer)
+canvas_init(&canvas, &vk_dev, model.depth_texture, "<canvas>.vert.spv", "<canvas>.frag.spv")
+
+layer order on screen (add the MicroUI layer from 015 between canvas and finish)
+layers := [4]^Renderer{&clear.renderer, &model.renderer, &canvas.renderer, &finish.renderer}
+
+every frame, before recording the command buffer:
+canvas_clear(&canvas)
+canvas_plane3d(&canvas, {0, -1, 0}, {1, 0, 0}, {0, 0, 1}, 40, 40, 10, 10, {0.5, 0.5, 0.5, 1}, {1, 1, 1, 1})  // a floor grid
+canvas_line(&canvas, {0, 0, 0}, {1, 0, 0}, {1, 0, 0, 1})  // a red line
+canvas_update_buffer(&canvas, &vk_dev, image_index)
+canvas_update_uniform_buffer(&canvas, &vk_dev, mvp, f32(glfw.GetTime()), image_index)
+
+then: for layer in layers { layer.fill_command_buffer(layer, cmd, image_index) }
+*/
