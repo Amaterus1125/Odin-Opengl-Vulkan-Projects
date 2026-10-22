@@ -137,3 +137,14 @@ vk_dev.device, vk_dev.physical_device, MUI_VERTEX_DATA_SIZE, {.STORAGE_BUFFER}, 
 )
 if !ok { return false }
 }
+
+// uniform buffer = just the 2D projection matrix
+	if !renderer_create_uniform_buffers(&self.base, vk_dev, size_of(matrix[4, 4]f32)) { return false }
+
+// pool counts per image: 1 uniform, 1 storage, 1 sampler
+self.descriptor_pool, ok = create_descriptor_pool(vk_dev.device, u32(image_count), 1, 1, 1)
+if !ok { return false }
+self.descriptor_set_layout, self.descriptor_sets, ok = create_geometry_descriptor_set(
+vk_dev.device, self.descriptor_pool, self.uniform_buffers, size_of(matrix[4, 4]f32),self.storage_buffers, MUI_VERTEX_DATA_SIZE, self.atlas_sampler, self.atlas.view,)
+if !ok { return false }
+
