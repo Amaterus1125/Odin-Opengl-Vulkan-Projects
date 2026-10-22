@@ -297,3 +297,14 @@ mui_flush_batch(self, &batch_start, clip)
 clip = v.rect
 }}
 mui_flush_batch(self, &batch_start, clip) // the last run
+
+// 3. upload. (Pixel coordinates with y pointing DOWN, same ortho convention as the book's ImGui renderer: top and bottom as given.)
+w := f32(self.framebuffer_width)
+h := f32(self.framebuffer_height)
+proj := linalg.matrix_ortho3d_f32(0, w, 0, h, -1, 1)
+upload_memory(vk_dev.device, self.uniform_buffers_memory[current_image], 0, &proj, size_of(matrix[4, 4]f32))
+
+if len(self.vertices) > 0 {
+upload_memory(vk_dev.device, self.storage_buffers_memory[current_image], 0, raw_data(self.vertices), len(self.vertices) * size_of(MuiVertex))
+}
+}
