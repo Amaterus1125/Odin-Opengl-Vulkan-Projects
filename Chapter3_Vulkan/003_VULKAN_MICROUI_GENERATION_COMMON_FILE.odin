@@ -308,3 +308,72 @@ if len(self.vertices) > 0 {
 upload_memory(vk_dev.device, self.storage_buffers_memory[current_image], 0, raw_data(self.vertices), len(self.vertices) * size_of(MuiVertex))
 }
 }
+
+
+/ =====================================================================================================================
+// HOW TO USE IT (copy this pattern)
+// =====================================================================================================================
+/*
+	// 1. your UI state + your UI proc. This is the ONLY part you rewrite for each new UI.
+	DebugUI :: struct { speed: f32, show_grid: bool }
+
+	debug_ui :: proc(ctx: ^mu.Context, user_data: rawptr) {
+		state := cast(^DebugUI)user_data
+		if mu.window(ctx, "Debug", {10, 10, 260, 140}) {
+			mu.label(ctx, "hello from MicroUI")
+			mu.slider(ctx, &state.speed, 0, 10)
+			mu.checkbox(ctx, "show grid", &state.show_grid)
+		}
+	}
+
+	// 2. setup (after the model/canvas layers exist)
+	ui_state := DebugUI{speed = 1}
+	ui: MuiRenderer
+	mui_init(&ui, &vk_dev, debug_ui, &ui_state, "data/shaders/chapter04/mui.vert.spv", "data/shaders/chapter04/mui.frag.spv")
+
+	layers := [5]^Renderer{&clear.renderer, &model.renderer, &canvas.renderer, &ui.renderer, &finish.renderer}
+
+	// 3. every frame, before recording the command buffer
+	mui_poll_glfw_input(&ui, window)
+	mui_update(&ui, &vk_dev, image_index)
+	// then: for layer in layers { layer.fill_command_buffer(layer, cmd, image_index) }
+
+	// 4. a second, separate UI later = a second MuiRenderer with a different proc and state. Nothing above changes.
+*/
+
+// IMPORTANT SHADERS FOR MICROUI BC WE CAN'T FIND ANY , SO WE MADE SOME 
+
+// Shaders for this layer (save as mui.vert / mui.frag, then compile: glslangValidator -V mui.vert -o mui.vert.spv)
+
+*/
+MUI.VERT - 
+#version 460
+
+struct Vertex { float x, y, u, v; uint color; };   // 20 bytes, matches MuiVertex
+
+layout(binding = 0) uniform UniformBuffer { mat4 proj; } ubo;
+layout(std430, binding = 1) readonly buffer Vertices { Vertex in_Vertices[]; };
+
+layout(location = 0) out vec2 uv;
+layout(location = 1) out vec4 color;
+
+void main() {
+    Vertex v = in_Vertices[gl_VertexIndex];          // vertex pulling: no vertex buffer
+    gl_Position = ubo.proj * vec4(v.x, v.y, 0.0, 1.0);
+    uv = vec2(v.u, v.v);
+    color = unpackUnorm4x8(v.color);                 // bytes r,g,b,a -> 0..1
+}
+
+MUI.FRAG - 
+#version 460
+
+layout(binding = 2) uniform sampler2D atlas;
+
+layout(location = 0) in vec2 uv;
+layout(location = 1) in vec4 color;
+layout(location = 0) out vec4 outColor;
+
+void main() {
+    outColor = color * texture(atlas, uv); // atlas = white + alpha, so this tints the glyph / rect
+}
+*/
