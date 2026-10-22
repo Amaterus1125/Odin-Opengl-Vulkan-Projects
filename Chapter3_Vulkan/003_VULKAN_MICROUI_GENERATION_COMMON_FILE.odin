@@ -128,3 +128,12 @@ if !ok { return false }
 self.atlas_sampler, ok = create_texture_sampler(vk_dev.device) // if the text looks blurry, make this sampler NEAREST
 if !ok { return false }
 
+// one vertex buffer per swapchain image, CPU-writable
+self.storage_buffers        = make([]vk.Buffer, image_count)
+self.storage_buffers_memory = make([]vk.DeviceMemory, image_count)
+for i in 0 ..< image_count {
+self.storage_buffers[i], self.storage_buffers_memory[i], ok = create_buffer(
+vk_dev.device, vk_dev.physical_device, MUI_VERTEX_DATA_SIZE, {.STORAGE_BUFFER}, {.HOST_VISIBLE, .HOST_COHERENT},
+)
+if !ok { return false }
+}
