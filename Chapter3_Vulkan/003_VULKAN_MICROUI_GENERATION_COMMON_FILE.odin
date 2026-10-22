@@ -157,3 +157,17 @@ if !renderer_create_pipeline(&self.base, vk_dev, vert_file, frag_file, .TRIANGLE
 self.swapchain_framebuffers, ok = create_color_and_depth_framebuffers(vk_dev, self.render_pass, 0, self.framebuffer_width, self.framebuffer_height)
 return ok
 }
+
+// records this layer. No draw calls = no render pass (it is a middle layer, so skipping it is fine).
+mui_fill_command_buffer :: proc(r: ^Renderer, command_buffer: vk.CommandBuffer, current_image: u32) {
+self := cast(^MuiRenderer)r
+if len(self.draw_calls) == 0 { return }
+renderer_begin_render_pass(&self.base, command_buffer, current_image)
+fb_w := i32(self.framebuffer_width)
+fb_h := i32(self.framebuffer_height)
+for dc in self.draw_calls {
+// MicroUI's "unclipped" rectangle is huge, so clamp the clip rect to the framebuffer
+x0 := clamp(dc.clip.x, 0, fb_w)
+y0 := clamp(dc.clip.y, 0, fb_h)
+x1 := clamp(dc.clip.x + dc.clip.w, 0, fb_w)
+y1 := clamp(dc.clip.y + dc.clip.h, 0, fb_h)
