@@ -195,3 +195,22 @@ delete(self.draw_calls)
 free(self.ctx)
 renderer_base_destroy(&self.base)
 }
+
+// INPUT - GLFW -> MICROUI 
+mui_poll_glfw_input :: proc(self: ^MuiRenderer, window: glfw.WindowHandle) {
+xf, yf := glfw.GetCursorPos(window)
+x, y := i32(xf), i32(yf)
+mu.input_mouse_move(self.ctx, x, y)
+buttons := [3]mu.Mouse{.LEFT, .RIGHT, .MIDDLE}
+glfw_buttons := [3]i32{glfw.MOUSE_BUTTON_LEFT, glfw.MOUSE_BUTTON_RIGHT, glfw.MOUSE_BUTTON_MIDDLE}
+for i in 0 ..< 3 {
+down := glfw.GetMouseButton(window, glfw_buttons[i]) == glfw.PRESS
+if down && !self.mouse_down[i] {
+mu.input_mouse_down(self.ctx, x, y, buttons[i])} else if !down && self.mouse_down[i] {
+mu.input_mouse_up(self.ctx, x, y, buttons[i])
+}
+self.mouse_down[i] = down
+}
+}
+
+
