@@ -105,3 +105,38 @@ vk.DestroyShaderModule(vk_dev.device, vert_module, nil) // the pipeline keeps it
 vk.DestroyShaderModule(vk_dev.device, frag_module, nil)
 return ok
 }
+
+// PART 2 - VulkanCanvas - immediate-mode debug lines 
+
+//one canvas vertex = 3D position + color = 7 floats = 28 bytes , the canvas must read it as plain floats 
+CanvasVertex :: struct { 
+position : [3]f32, 
+color : [4]f32 ,
+}
+
+//per frame uniform data , the combined model view projection matrix and the current time 
+CanvasUniform :: struct { 
+mvp : matrix[4,4]f32 , 
+time : f32 , 
+} 
+
+// the GPU buffer is pre-allocated for a fixed maximum, so we can never draw more than this many lines
+CANVAS_MAX_LINES_COUNT :: 65536
+CANVAS_MAX_LINES_DATA_SIZE :: 2 * CANVAS_MAX_LINES_COUNT * size_of(CanvasVertex) // 2 vertices per line
+
+VulkanCanvas :: struct { 
+using renderer : Renderer , //keeping first always
+lines : [dynamic]CanvasVertex . //cpu side list , 2 vertices per line 
+storage_buffers : []vk.Buffer , //gpu copy of the list , one per swapchain image as always 
+storage_buffers_memory : []vk.DeviceMemory , 
+} 
+
+// 'depth' is the shared depth buffer (model.depth_texture) , so lines hide behind the duck correctly 
+canvas_init :: proc(self: ^VulkanCanvas , vk_dev : ^VulkanRenderDevice , depth: VulkanImage , vert_file , frag_file: string) -> bool { 
+renderer_base_init(&self.base, vk_dev, depth)
+self.fill_command_buffer = canvas_fill_command_buffer
+self.destroy = canvas_destroy
+ok: bool
+image_count := len(vk_dev.swapchain_images)
+
+//one geometry buffer per swapchain image , CPU writable 
