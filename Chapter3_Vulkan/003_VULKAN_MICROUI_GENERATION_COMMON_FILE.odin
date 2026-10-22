@@ -237,3 +237,12 @@ append(&self.vertices, MuiVertex{{x1, y1}, {u1, v1}, c})
 append(&self.vertices, MuiVertex{{x0, y1}, {u0, v1}, c})
 }
 
+// close the current run of vertices as one draw call (does nothing if the run is empty)
+mui_flush_batch :: proc(self: ^MuiRenderer, batch_start: ^int, clip: mu.Rect) {
+count := len(self.vertices) - batch_start^
+if count > 0 {
+append(&self.draw_calls, MuiDrawCall{first_vertex = u32(batch_start^), vertex_count = u32(count), clip = clip})
+batch_start^ = len(self.vertices)
+}
+}
+
