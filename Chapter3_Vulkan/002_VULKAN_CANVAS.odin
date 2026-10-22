@@ -223,8 +223,14 @@ upload_memory(vk_dev.device , self.storage_buffers_memory[current_image], 0 , ra
 canvas_update_uniform_buffer :: proc(self: ^VulkanCanvas, vk_dev: ^VulkanRenderDevice, m: matrix[4, 4]f32, time: f32, current_image: u32) {
 	ubo := CanvasUniform{mvp = m, time = time}
 	upload_memory(vk_dev.device, self.uniform_buffers_memory[current_image], 0, &ubo, size_of(CanvasUniform))
-
-
 }
 
+// nothing to draw = no render pass at all. Otherwise ONE draw call renders every line.
+canvas_fill_command_buffer :: proc(r: ^Renderer, command_buffer: vk.CommandBuffer, current_image: u32) {
+self := cast(^VulkanCanvas)r
+if len(self.lines) == 0 { return }
+renderer_begin_render_pass(&self.base, command_buffer, current_image)
+vk.CmdDraw(command_buffer, u32(len(self.lines)), 1, 0, 0)
+vk.CmdEndRenderPass(command_buffer)
+}
 
