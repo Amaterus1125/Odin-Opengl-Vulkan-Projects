@@ -349,7 +349,7 @@ upload_memory(vk_dev.device, self.storage_buffers_memory[current_image], 0, raw_
 MUI.VERT - 
 #version 460
 
-struct Vertex { float x, y, u, v; uint color; };   // 20 bytes, matches MuiVertex
+struct Vertex { float x, y, u, v; uint color; }; // 20 bytes, matches MuiVertex
 
 layout(binding = 0) uniform UniformBuffer { mat4 proj; } ubo;
 layout(std430, binding = 1) readonly buffer Vertices { Vertex in_Vertices[]; };
@@ -358,10 +358,10 @@ layout(location = 0) out vec2 uv;
 layout(location = 1) out vec4 color;
 
 void main() {
-    Vertex v = in_Vertices[gl_VertexIndex];          // vertex pulling: no vertex buffer
+    Vertex v = in_Vertices[gl_VertexIndex]; // vertex pulling: no vertex buffer
     gl_Position = ubo.proj * vec4(v.x, v.y, 0.0, 1.0);
     uv = vec2(v.u, v.v);
-    color = unpackUnorm4x8(v.color);                 // bytes r,g,b,a -> 0..1
+    color = unpackUnorm4x8(v.color);  // bytes r,g,b,a -> 0..1
 }
 
 MUI.FRAG - 
