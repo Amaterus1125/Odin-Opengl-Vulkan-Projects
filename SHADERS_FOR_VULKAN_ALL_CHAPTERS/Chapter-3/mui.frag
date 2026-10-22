@@ -8,3 +8,4 @@ layout(location = 0) out vec4 outColor;
 
 void main() {
     outColor = color * texture(atlas, uv);         
+}
