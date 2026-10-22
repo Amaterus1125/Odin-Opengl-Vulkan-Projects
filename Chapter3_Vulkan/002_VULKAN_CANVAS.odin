@@ -81,3 +81,27 @@ vk.UpdateDescriptorSets(device, u32(len(writes)), raw_data(writes), 0, nil)
 }
 return layout, sets, true
 }
+
+// pipeline layout + vertex/fragment shaders + pipeline , stored in base , (pipeline creation boilerplate and both new layes need the same steps so it lives here once) 
+renderer_create_pipeline :: proc( 
+self : ^RendererBase , vk_dev : ^VUlkanRenderDevice , vert_file , frag_file : string , topology : vk.PrimitiveTopology , use_depth , use_blending , dynamic_scissor : bool ,) -> bool{ 
+ok : bool 
+self.pipeline_layout, ok = create_pipeline_layout(vk_dev.device, self.descriptor_set_layout)
+	if !ok { return false }
+vert_module, frag_module: vk.ShaderModule
+vert_module, ok = create_shader_module(vk_dev.device, vert_file)
+if !ok { return false }
+frag_module, ok = create_shader_module(vk_dev.device, frag_file)
+if !ok { return false }
+
+stages := [2]vk.PipelineShaderStageCreateInfo{
+shader_stage_info({.VERTEX},   vert_module, "main"),
+shader_stage_info({.FRAGMENT}, frag_module, "main"),
+}
+self.graphics_pipeline, ok = create_graphics_pipeline(
+vk_dev.device, self.framebuffer_width, self.framebuffer_height, self.render_pass, self.pipeline_layout, stages[:], topology, use_depth, use_blending, dynamic_scissor,
+)
+vk.DestroyShaderModule(vk_dev.device, vert_module, nil) // the pipeline keeps its own copy
+vk.DestroyShaderModule(vk_dev.device, frag_module, nil)
+return ok
+}
