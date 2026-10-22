@@ -210,3 +210,14 @@ o2 := orig + t * v2
 canvas_line(self, o2 - s1 / 2 * v1, o2 + s1 / 2 * v1, color)
 }
 }
+
+// VULKAN PART - GET THE LIST ONTO THE GPU AND DRAW IT 
+
+// copy this frame's lines into the GPU buffer of swapchain image `current_image`
+canvas_update_buffer :: proc(self : ^VulkanCanvas , vk_dev : ^VulkanRenderDevice , current_image : u32) { 
+if len(self.lines) == 0 {return} 
+upload_memory(vk_dev.device , self.storage_buffers_memory[current_image], 0 , raw_data(self.lines) , len(self.lines) * size_of(CanvasVertex) ) 
+} 
+
+
+
