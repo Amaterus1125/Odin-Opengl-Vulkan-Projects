@@ -138,3 +138,21 @@ self.move_speed = glsl.normalize(self.move_speed) * max_speed
 }
 self.camera_position += self.move_speed * dt
 }
+
+camera_positioner_set_position :: proc(self: ^CameraPositioner_FirstPerson, pos: glsl.vec3) {
+	self.camera_position = pos
+}
+
+// Recalculates the camera orientation using the existing camera position and direction
+camera_positioner_set_up_vector :: proc(self: ^CameraPositioner_FirstPerson, up: glsl.vec3) {
+view := self.interface.get_view_matrix(self)
+dir := -glsl.vec3{view[0][2], view[1][2], view[2][2]}
+look_at_mat := glsl.mat4LookAt(self.camera_position, self.camera_position + dir, up)
+self.camera_orientation = glsl.quat_from_matrix4(look_at_mat)
+}
+
+// Helper function to reset the previous mouse position to prevent jerky rotation
+camera_positioner_reset_mouse_position :: proc(self: ^CameraPositioner_FirstPerson, p: glsl.vec2) {
+self.mouse_pos = p
+}
+
