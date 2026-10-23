@@ -68,3 +68,13 @@ camera_position:glsl.vec3,
 camera_orientation: glsl.quat,
 move_speed: glsl.vec3,  // Private data members controlling state
 }
+
+// Non-default constructor taking initial position, target position, and up vector[cite: 5]
+camera_positioner_first_person_init :: proc(self: ^CameraPositioner_FirstPerson, pos, target, up: glsl.vec3) {
+self.mouse_speed  = 4.0
+self.acceleration = 150.0
+self.damping = 0.2
+self.max_speed = 10.0
+self.fast_coef = 10.0
+self.mouse_pos = {0, 0}
+self.camera_position = pos
