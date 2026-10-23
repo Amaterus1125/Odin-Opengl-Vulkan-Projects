@@ -78,3 +78,9 @@ self.max_speed = 10.0
 self.fast_coef = 10.0
 self.mouse_pos = {0, 0}
 self.camera_position = pos
+
+// glm::lookAt constructs a matrix; we extract the quaternion from it for orientation[cite: 5]
+look_at_mat  := glsl.mat4LookAt(pos, target, up)
+self.camera_orientation = glsl.quat_from_matrix4(look_at_mat)
+self.move_speed  = {0, 0, 0}
+
