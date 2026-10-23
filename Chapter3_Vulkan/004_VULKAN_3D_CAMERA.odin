@@ -173,3 +173,11 @@ camera_positioner_first_person_init(&positioner, {0.0, 0.0, 0.0}, {0.0, 0.0, -1.
 camera = Camera{positioner = &positioner.interface}
 }
 
+// GLFW cursor position callback updating normalized 0...1 coordinates
+cursor_pos_callback :: proc "c" (window: glfw.WindowHandle, x, y: f64) {
+context = runtime.default_context()
+width, height: i32
+glfw.GetFramebufferSize(window, &width, &height)
+mouse_state.pos.x = f32(x / f64(width))
+mouse_state.pos.y = f32(y / f64(height))
+}
