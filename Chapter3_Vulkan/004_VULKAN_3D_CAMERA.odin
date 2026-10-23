@@ -181,3 +181,12 @@ glfw.GetFramebufferSize(window, &width, &height)
 mouse_state.pos.x = f32(x / f64(width))
 mouse_state.pos.y = f32(y / f64(height))
 }
+
+
+// GLFW mouse button callback raises the pressedLeft flag
+mouse_button_callback :: proc "c" (window: glfw.WindowHandle, button, action, mods: i32) {
+context = runtime.default_context()
+if button == glfw.MOUSE_BUTTON_LEFT {
+mouse_state.pressed_left = (action == glfw.PRESS)
+}
+}
