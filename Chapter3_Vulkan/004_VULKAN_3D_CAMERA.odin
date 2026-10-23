@@ -95,16 +95,22 @@ return r*t
 
 self.interface.get_position = proc(data: rawptr) -> glsl.vec3 {
 self := cast(^CameraPositioner_FirstPerson)data
-return self.camera_position[cite: 8]
+return self.camera_position
 }
 }
 
 // Adds dynamics to the camera model
 camera_positioner_update :: proc(self: ^CameraPositioner_FirstPerson, delta_seconds: f64, mouse_pos: glsl.vec2, mouse_pressed: bool) {
 if mouse_pressed {
-delta := mouse_pos - self.mouse_pos[cite: 5]
-delta_quat := glsl.quatEulerAngles(self.mouse_speed * delta.y, self.mouse_speed * delta.x, 0.0)[cite: 5]
-self.camera_orientation = glsl.normalize(delta_quat * self.camera_orientation)[cite: 5]
+delta := mouse_pos - self.mouse_pos
+delta_quat := glsl.quatEulerAngles(self.mouse_speed * delta.y, self.mouse_speed * delta.x, 0.0)
+self.camera_orientation = glsl.normalize(delta_quat * self.camera_orientation)
 }
 self.mouse_pos = mouse_pos
+
+// Extract forward, right, and up vectors from the 4x4 view matrix
+v := glsl.mat4FromQuat(self.camera_orientation)
+forward := -glsl.vec3{v[0][2], v[1][2], v[2][2]}
+right_  :=  glsl.vec3{v[0][0], v[1][0], v[2][0]}
+up := glsl.cross(right_, forward)
 
