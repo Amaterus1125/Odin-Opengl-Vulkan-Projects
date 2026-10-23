@@ -124,3 +124,17 @@ if self.movement.up_      do accel += up
 if self.movement.down_    do accel -= up
 if self.movement.fast_speed do accel *= self.fast_coef
 dt := f32(delta_seconds)
+
+
+// Decelerate if 0, otherwise integrate using Euler integration
+if accel == {0, 0, 0} {
+self.move_speed -= self.move_speed * math.min((1.0 / self.damping) * dt, 1.0)
+} else {
+self.move_speed += accel * self.acceleration * dt
+max_speed := self.movement.fast_speed ? self.max_speed * self.fast_coef : self.max_speed
+if glsl.length(self.move_speed) > max_speed {
+self.move_speed = glsl.normalize(self.move_speed) * max_speed
+}
+}
+self.camera_position += self.move_speed * dt
+}
