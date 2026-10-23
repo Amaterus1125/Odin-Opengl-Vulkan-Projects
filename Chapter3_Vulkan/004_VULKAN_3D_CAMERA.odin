@@ -11,3 +11,8 @@
   procedure variables to achieve the exact polymorphic behavior requested in the text[cite: 1, 2].
 */ 
 
+ /* THE THINGS TO REMEMBER
+ 1. The interface of `CameraPositionerInterface` contains pure virtual methods in C++[cite: 2]. In Odin, we map this to a struct with explicit proc variables.
+ 2. The `update()` method should be called at every frame and take the time elapsed since the previous frame.
+ 3. Instead of controlling the camera speed or position directly, the user input controls only the acceleration vector directly, making behavior non-jerky
+
