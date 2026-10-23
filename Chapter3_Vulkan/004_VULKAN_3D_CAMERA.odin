@@ -156,3 +156,20 @@ camera_positioner_reset_mouse_position :: proc(self: ^CameraPositioner_FirstPers
 self.mouse_pos = p
 }
 
+// [NEW-3] MouseState & GLFW Callbacks
+MouseState :: struct {
+pos: glsl.vec2,
+pressed_left: bool,
+}
+
+// Global variables for the demo application
+mouse_state: MouseState
+positioner: CameraPositioner_FirstPerson
+camera: Camera
+
+// Call this once before your render loop
+init_camera_globals :: proc() {
+camera_positioner_first_person_init(&positioner, {0.0, 0.0, 0.0}, {0.0, 0.0, -1.0}, {0.0, 1.0, 0.0})
+camera = Camera{positioner = &positioner.interface}
+}
+
