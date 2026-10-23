@@ -93,4 +93,10 @@ r := glsl.mat4FromQuat(self.camera_orientation)
 return r*t 
 } 
 
+self.interface.get_position = proc(data: rawptr) -> glsl.vec3 {
+self := cast(^CameraPositioner_FirstPerson)data
+return self.camera_position[cite: 8]
+}
+}
+
 
