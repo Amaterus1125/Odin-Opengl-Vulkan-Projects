@@ -84,3 +84,13 @@ look_at_mat  := glsl.mat4LookAt(pos, target, up)
 self.camera_orientation = glsl.quat_from_matrix4(look_at_mat)
 self.move_speed  = {0, 0, 0}
 
+//populate the polymorphic vtable 
+self.interface.data = self 
+self.interface.get_view_matrix = proc(data : rawptr) -> glsl.mat4 { 
+self := cast(^CameraPositioner_FirstPerson)data 
+t := glsl.mat4Translate(self.camera_postition) 
+r := glsl.mat4FromQuat(self.camera_orientation) 
+return r*t 
+} 
+
+
