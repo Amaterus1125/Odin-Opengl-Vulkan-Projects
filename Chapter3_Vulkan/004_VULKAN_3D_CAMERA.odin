@@ -38,4 +38,18 @@ positioner : ^CameraPositionerInterface ,
 camera_get_view_matrix :: proc(c: ^Camera) -> glsl.mat4 { 
 return c.positioner.get_view_matrix(c.positioner.data) 
 }
+camera_get_position :: proc(c: ^Camera) -> glsl.vec3 {
+	return c.positioner.get_position(c.positioner.data)[cite: 2]
+}
 
+// [NEW-2] CameraPositioner_FirstPerson
+// boolean flags that define the current motion of our camera 
+Movement :: struct {
+	forward:    bool,
+	backward:   bool,
+	left:       bool,
+	right_:     bool,
+	up_:        bool,
+	down_:      bool,
+	fast_speed: bool,
+}
