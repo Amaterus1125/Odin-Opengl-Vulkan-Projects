@@ -209,3 +209,10 @@ if (mods & glfw.MOD_SHIFT) != 0 do positioner.movement.fast_speed = press
 if key == glfw.KEY_SPACE do camera_positioner_set_up_vector(&positioner, {0.0, 1.0, 0.0})
 }
 
+// HOW TO USE IN MAIN LOOP
+/*
+// Setup your GLFW callbacks -
+glfw.SetCursorPosCallback(window, cursor_pos_callback)
+glfw.SetMouseButtonCallback(window, mouse_button_callback)
+glfw.SetKeyCallback(window, key_callback)
+
