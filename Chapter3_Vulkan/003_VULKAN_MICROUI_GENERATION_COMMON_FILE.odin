@@ -23,7 +23,7 @@ d) The pipeline must NOT cull our triangles (cull mode NONE). If you see nothing
 e) MicroUI names used: mu.default_atlas_alpha, mu.default_atlas, mu.DEFAULT_ATLAS_WIDTH / HEIGHT / WHITE / FONT If one is named differently in your Odin version, only [MUI-1] and [MUI-3] need touching.
 */ 
 
-//  THE THINGS TO REMEMBER 
+//  THE THINGS TO REMEMBER FOR LATER 
 /*
  1. HOW TO REUSE IT: write a proc  my_ui :: proc(ctx: ^mu.Context, user_data: rawptr)  that calls mu.window / mu.button / ... .
    Then  mui_init(&layer, &vk_dev, my_ui, &my_data, vert, frag).   That's all. Any number of layers can exist with different procs.
