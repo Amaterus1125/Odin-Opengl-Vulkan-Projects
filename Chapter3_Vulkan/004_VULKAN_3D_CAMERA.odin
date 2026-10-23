@@ -191,3 +191,21 @@ mouse_state.pressed_left = (action == glfw.PRESS)
 }
 }
 
+
+// Keyboard input for camera movement
+key_callback :: proc "c" (window: glfw.WindowHandle, key, scancode, action, mods: i32) {
+context = runtime.default_context()
+press := action != glfw.RELEASE
+if key == glfw.KEY_ESCAPE do glfw.SetWindowShouldClose(window, true)
+if key == glfw.KEY_W do positioner.movement.forward = press
+if key == glfw.KEY_S do positioner.movement.backward = press
+if key == glfw.KEY_A do positioner.movement.left = press
+if key == glfw.KEY_D do positioner.movement.right_ = press
+if key == glfw.KEY_1 do positioner.movement.up_ = press
+if key == glfw.KEY_2 do positioner.movement.down_ = press
+if (mods & glfw.MOD_SHIFT) != 0 do positioner.movement.fast_speed = press
+	
+// Reorient the camera up vector to the world vector
+if key == glfw.KEY_SPACE do camera_positioner_set_up_vector(&positioner, {0.0, 1.0, 0.0})
+}
+
