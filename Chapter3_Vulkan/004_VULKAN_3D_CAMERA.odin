@@ -20,3 +20,22 @@
 import "core:math"
 import "core:math/linalg/glsl"
 import "vendor:glfw"
+
+// [NEW-1] Camera & CameraPositionerInterface
+
+//represents the pure virtual class CameraPositionInterface 
+CamerPositionInterface :: struct { 
+data : rawptr , 
+get_view_matrix : proc(data : rawptr) -> glsl.mat4, 
+get_position : proc(data : rawptr) -> glsl.vec3 , 
+}
+
+//represents the camera final class 
+Camera :: struct { 
+positioner : ^CameraPositionerInterface , 
+} 
+
+camera_get_view_matrix :: proc(c: ^Camera) -> glsl.mat4 { 
+return c.positioner.get_view_matrix(c.positioner.data) 
+}
+
