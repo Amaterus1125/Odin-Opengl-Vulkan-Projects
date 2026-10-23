@@ -215,4 +215,9 @@ if key == glfw.KEY_SPACE do camera_positioner_set_up_vector(&positioner, {0.0, 1
 glfw.SetCursorPosCallback(window, cursor_pos_callback)
 glfw.SetMouseButtonCallback(window, mouse_button_callback)
 glfw.SetKeyCallback(window, key_callback)
-
+// Inside your frame loop update:
+camera_positioner_update(&positioner, deltaSeconds, mouse_state.pos, mouse_state.pressed_left)
+// Upload matrix, similar to fixed values in previous chapters
+view_matrix := camera_get_view_matrix(&camera)
+p := glsl.mat4Perspective(math.to_radians_f32(45.0), ratio, 0.1, 1000.0)
+*/
