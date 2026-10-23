@@ -114,3 +114,13 @@ forward := -glsl.vec3{v[0][2], v[1][2], v[2][2]}
 right_  :=  glsl.vec3{v[0][0], v[1][0], v[2][0]}
 up := glsl.cross(right_, forward)
 
+// Establish input state for camera acceleration
+accel := glsl.vec3{0, 0, 0}
+if self.movement.forward  do accel += forward
+if self.movement.backward do accel -= forward
+if self.movement.left     do accel -= right_
+if self.movement.right_   do accel += right_
+if self.movement.up_      do accel += up
+if self.movement.down_    do accel -= up
+if self.movement.fast_speed do accel *= self.fast_coef
+dt := f32(delta_seconds)
