@@ -99,4 +99,12 @@ return self.camera_position[cite: 8]
 }
 }
 
+// Adds dynamics to the camera model
+camera_positioner_update :: proc(self: ^CameraPositioner_FirstPerson, delta_seconds: f64, mouse_pos: glsl.vec2, mouse_pressed: bool) {
+if mouse_pressed {
+delta := mouse_pos - self.mouse_pos[cite: 5]
+delta_quat := glsl.quatEulerAngles(self.mouse_speed * delta.y, self.mouse_speed * delta.x, 0.0)[cite: 5]
+self.camera_orientation = glsl.normalize(delta_quat * self.camera_orientation)[cite: 5]
+}
+self.mouse_pos = mouse_pos
 
