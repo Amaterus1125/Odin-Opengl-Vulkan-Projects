@@ -53,3 +53,18 @@ Movement :: struct {
 	down_:      bool,
 	fast_speed: bool,
 }
+
+CameraPositioner_FirstPerson :: struct { 
+interface : CameraPositionInterface , // polymorphic interface implementation 
+movement : Movement , //decouples keyboard input from camera logic 
+mouse_speed : f32 , 
+acceleration : f32, 
+damping : f32 , 
+max_speed : f32 , 
+fast_coef : f32 , // Parameters to tweak responsiveness and damping
+mouse_pos : glsl.vec2, 
+mouse_pos: glsl.vec2,
+camera_position:glsl.vec3,
+camera_orientation: glsl.quat,
+move_speed: glsl.vec3,  // Private data members controlling state
+}
