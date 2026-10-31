@@ -28,4 +28,19 @@ current_transform: matrix[4, 4]f32, // the view matrix, rebuilt every frame
 move_to_init :: proc(pos , angles : [3]f32) -> CameraPositionMoveTo { 
 return { 
 damping_linear = 10.0 , 
-damping_euler_angles = { 5,5,5} 
+damping_euler_angles = { 5,5,5} ,
+position_current  = pos,
+position_desired = pos,
+angles_current = angles,
+angles_desired = angles,
+current_transform = 1, // identity matrix
+}
+}
+
+//called by the UI sliders 
+move_to_set_desired_position :: proc(p: ^CameraPositionerMoveTo, pos: [3]f32) { p.position_desired = pos }
+move_to_set_desired_angles :: proc(p: ^CameraPositionerMoveTo, angles: [3]f32) { p.angles_desired = angles }
+
+move_to_view_matrix :: proc(p: CameraPositionerMoveTo) -> matrix[4, 4]f32 { return p.current_transform }
+move_to_position :: proc(p: CameraPositionerMoveTo) -> [3]f32 { return p.position_current }
+
