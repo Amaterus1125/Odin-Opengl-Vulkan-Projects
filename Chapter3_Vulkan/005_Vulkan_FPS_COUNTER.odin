@@ -36,3 +36,18 @@ return counter.current_fps
 } 
 
 /* main proc functions - 
+before the loop: remember the current time ---
+
+time_stamp := glfw.GetTime()
+delta_seconds: f32
+fps_counter := fps_counter_init(0.5) // try other averaging intervals
+
+for !glfw.WindowShouldClose(window) {
+   time since the previous iteration ---
+   new_time_stamp := glfw.GetTime()
+   delta_seconds = f32(new_time_stamp - time_stamp)
+   time_stamp = new_time_stamp
+   fps_counter_tick(&fps_counter, delta_seconds)
+   do the rest of rendering here---
+}
+*/
