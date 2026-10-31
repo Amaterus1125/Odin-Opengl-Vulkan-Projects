@@ -145,3 +145,24 @@ if .CHANGE in mu.slider(ctx, &v[i], low, high) { changed = true }
 return changed
 }
 
+render_camera_gui :: proc(ctx: ^mu.Context) {
+// a new window; everything until end_window goes inside it (the rect is x, y, width, height in pixels)
+if !mu.begin_window(ctx, "Camera Control", {10, 10, 260, 170}) { return }
+defer mu.end_window(ctx)
+
+// the "combo box": a button that opens a popup of choices 
+current := camera_type
+mu.layout_row(ctx, {-1})
+if .SUBMIT in mu.button(ctx, camera_type_names[current]) {
+mu.open_popup(ctx, "camera_type_popup") // appears at the mouse cursor
+}
+if mu.begin_popup(ctx, "camera_type_popup") {
+for type in CameraType {
+// one button per choice; clicking it picks it and closes the popup
+if .SUBMIT in mu.button(ctx, camera_type_names[type]) {
+current = type
+mu.get_current_container(ctx).open = false
+}
+}
+mu.end_popup(ctx)
+}
