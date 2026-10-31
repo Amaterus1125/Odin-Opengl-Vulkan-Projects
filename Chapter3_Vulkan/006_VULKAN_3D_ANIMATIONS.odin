@@ -127,3 +127,21 @@ reinit_camera :: proc() {
 
 // PART 3: THE CAMERA PICKER UI, WITH MICROUI
 
+camera_type_names := [CameraType]string{
+.First_Person = "FirstPerson",
+.Move_To = "MoveTo",
+}
+
+// three sliders in a row for one [3]f32; returns true if any was dragged
+slider3 :: proc(ctx: ^mu.Context, label: string, v: ^[3]f32, low, high: f32) -> bool {
+mu.layout_row(ctx, {-1}) // a full-width row for the label
+mu.label(ctx, label)
+mu.layout_row(ctx, {70, 70, 70}) // then 3 equal slots for x, y, z
+changed := false
+for i in 0 ..< 3 {
+// a slider edits the f32 it points at, and reports .CHANGE when dragged
+if .CHANGE in mu.slider(ctx, &v[i], low, high) { changed = true }
+}
+return changed
+}
+
