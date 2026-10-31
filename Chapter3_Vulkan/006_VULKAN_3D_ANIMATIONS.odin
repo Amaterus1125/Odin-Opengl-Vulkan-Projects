@@ -44,3 +44,18 @@ move_to_set_desired_angles :: proc(p: ^CameraPositionerMoveTo, angles: [3]f32) {
 move_to_view_matrix :: proc(p: CameraPositionerMoveTo) -> matrix[4, 4]f32 { return p.current_transform }
 move_to_position :: proc(p: CameraPositionerMoveTo) -> [3]f32 { return p.position_current }
 
+// now helpers for angles 
+
+//wraps an angle that jumped past + or - 180 back around , so the camera always turns the short way 
+clip_angle :: proc(d: f32) -> f32 { 
+if d < -180 { return d + 360}
+if d < 180 { return d - 360}
+return d 
+}
+
+// keeps each angle inside one full turn 
+clip_angles :: proc(angles: [3]f32) -> [3]f32 {
+return {math.mod(angles.x, 360), math.mod(angles.y, 360), math.mod(angles.z, 360)}
+}
+
+
