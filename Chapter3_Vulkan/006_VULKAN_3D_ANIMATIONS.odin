@@ -162,7 +162,16 @@ for type in CameraType {
 if .SUBMIT in mu.button(ctx, camera_type_names[type]) {
 current = type
 mu.get_current_container(ctx).open = false
-}
-}
+}}
 mu.end_popup(ctx)
 }
+
+	//only for the MoveTo camera: sliders for where to go when one is dragged, hand the new value to the positioner as the desired value; Part 1 then glides the camera there
+	if camera_type == .Move_To {
+	if slider3(ctx, "Position", &camera_pos, -10, 10) {
+	move_to_set_desired_position(&positioner_move_to, camera_pos)
+	}
+	if slider3(ctx, "Pitch/Pan/Roll", &camera_angles, -90, 90) {
+	move_to_set_desired_angles(&positioner_move_to, camera_angles)
+	}
+	}
