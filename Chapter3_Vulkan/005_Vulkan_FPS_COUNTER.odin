@@ -14,3 +14,25 @@ assert(avg_internal_sec >0 )
 return {avg_internal_sec = avg_interval_sec} 
 } 
 
+/* call once per main-loop iteration with the time since the previous one -
+frame_rendered = false lets you skip counting an iteration where you chose not to draw. Returns true on the iterations where it printed. */
+
+fps_counter_tick :: proc(counter : ^FramesPerSecondCounter , delta_seconds : f32 , frames_rendered := true) -> 
+bool { if frame_rendererd{counter.num_frames += 1 } 
+counter.accumulated_time += f64(delta_seconds) 
+// not enough time yet: keep accumulating
+if counter.accumulated_time < f64(counter.avg_interval_sec) {return false} 
+// enough time - average, print, and start a new interval
+counter.current_fps = f32(f64(counter.num_frames) / counter.accumulated_time) 
+fmt.printf("FPS: %.1f\n", counter.current_fps)
+counter.num_frames = 0
+counter.accumulated_time = 0
+return true
+}
+
+// read the last computed average without printing 
+fps_counter_get :: proc(counter : FramesPerSecondCounter) -> f32 { 
+return counter.current_fps
+} 
+
+/* main proc functions - 
