@@ -18,5 +18,10 @@ CMake option(...) + add_definitions ->  #config + -define:PROFILER=...
 #if BUILD_WITH_...   ->  `when PROFILER == "..."`
 #error "cannot enable both"  ->  #assert (only ONE value can be picked)
 empty macros when disabled  ->  @(disabled = ...) on the procs
-OptickScopeWrapper (RAII class)  ->  @(deferred_in = ...)  */
+OptickScopeWrapper (RAII class)  ->  @(deferred_in = ...)  
  
+CHOOSE THE PROFILER WHEN YOU BUILD (the default is "none"):
+odin run 16.odin -file // no profiling
+odin run 16.odin -file -define:PROFILER=console
+odin run 16.odin -file -define:PROFILER=spall
+odin run 16.odin -file -define:PROFILER=tracy -define:TRACY_ENABLE=true -debug -o:speed (tracy only: see Part 5 first) */
