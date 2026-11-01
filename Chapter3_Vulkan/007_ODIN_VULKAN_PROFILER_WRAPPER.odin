@@ -25,3 +25,10 @@ odin run 16.odin -file // no profiling
 odin run 16.odin -file -define:PROFILER=console
 odin run 16.odin -file -define:PROFILER=spall
 odin run 16.odin -file -define:PROFILER=tracy -define:TRACY_ENABLE=true -debug -o:speed (tracy only: see Part 5 first) */
+
+// PART 1: THE BUILD OPTION
+PROFILER :: #config(PROFILER, "none") 
+
+//errors out if both profilers are on; here a single string means that can't happen, so we only reject unknown values
+#assert(PROFILER == "none" || PROFILER == "console" || PROFILER == "spall" || PROFILER == "tracy", "PROFILER must be none, console, spall or tracy")
+
