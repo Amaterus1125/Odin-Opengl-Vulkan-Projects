@@ -32,3 +32,10 @@ PROFILER :: #config(PROFILER, "none")
 //errors out if both profilers are on; here a single string means that can't happen, so we only reject unknown values
 #assert(PROFILER == "none" || PROFILER == "console" || PROFILER == "spall" || PROFILER == "tracy", "PROFILER must be none, console, spall or tracy")
 
+// colors for blocks. Same idea as the book's profiler::colors constants: callers use one set of names, whatever the backend does with them. (Neither built-in backend draws colors; the argument is kept so your calls stay identical if you later plug in a profiler that does.)
+Profiler_Color :: enum u32 { 
+Magenta = 0xFF00FF,
+Green   = 0x00FF00,
+Red     = 0xFF0000,
+}
+
