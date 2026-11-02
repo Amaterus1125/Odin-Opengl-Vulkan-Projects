@@ -80,7 +80,7 @@ when PROFILER == "spall" {
 //every proc below is marked with "disabled" when PROFILER is "none" , the compiler removes the calls completly 
 
 // EASY_PROFILER_ENABLE - calls once per startup 
-@(disable == PROFILER == "none") 
+@(disable = PROFILER == "none") 
 profiler_enable :: proc(file_name := "profile.spall") { 
 when PROFILER == "console" { 
 reserve(&opem_blocks, 64) } 
@@ -93,6 +93,16 @@ spall_backing = make([]u8, spall.BUFFER_DEFAULT_SIZE)
 spall_buffer = spall.buffer_create(spall_backing, u32(sync.current_thread_id()))
 }}
 
+// EASY_MAIN_THREAD / EASY_THREAD_SCOPE - give the current thread a name
+@(disable = PROFILER == "none" ) 
+profiler_thread :: proc(name : cstring , loc := #caller_location) { 
+when PROFILER == "tracy" { 
+tracy.SetThreadName(name) 
+} else when PROFILER == "spall" { 
+spall.buffer_name_thread(&spall_ctx , &spall_buffer , string(name) , loc) 
+}}
+
+// EASY_BLOCK(name, color): start a named block. Pair with profile_block_end(). Blocks can nest; each end closes the most recently started block.
 
 
 
