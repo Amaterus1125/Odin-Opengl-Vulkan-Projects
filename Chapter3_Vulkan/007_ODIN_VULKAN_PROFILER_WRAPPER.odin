@@ -76,4 +76,40 @@ when PROFILER == "spall" {
 @(private = "file") @(thread_local) spall_buffer: spall.Buffer
 }
 
+// PART 3 - API calling , those are calls we put in the program 
+//every proc below is marked with "disabled" when PROFILER is "none" , the compiler removes the calls completly 
+
+// EASY_PROFILER_ENABLE - calls once per startup 
+@(disable == PROFILER == "none") 
+profiler_enable :: proc(file_name := "profile.spall") { 
+when PROFILER == "console" { 
+reserve(&opem_blocks, 64) } 
+else wjen PROFILER == "tracy" {
+reserve(&tracy_zones , 64) } 
+else when PROFILER == "spall" { 
+// spall streams events into a file, so the file is opened now (PROFILER_DUMP later just flushes and closes it)
+spall_ctx = spall.context_create(file_name)
+spall_backing = make([]u8, spall.BUFFER_DEFAULT_SIZE)
+spall_buffer = spall.buffer_create(spall_backing, u32(sync.current_thread_id()))
+}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
