@@ -104,7 +104,17 @@ spall.buffer_name_thread(&spall_ctx , &spall_buffer , string(name) , loc)
 
 // EASY_BLOCK(name, color): start a named block. Pair with profile_block_end(). Blocks can nest; each end closes the most recently started block.
 
-
+@(disabled = PROFILER == "none")
+profile_block_begin :: proc(name: string, color: Profiler_Color = .Green, loc := #caller_location) {
+when PROFILER == "console" {
+append(&open_blocks, Open_Block{name, time.tick_now()})
+} else when PROFILER == "tracy" {
+// the Profiler_Color value is 0xRRGGBB, which is what Tracy expects
+append(&tracy_zones, tracy.ZoneBegin(true, tracy.TRACY_CALLSTACK, name, u32(color), loc))
+} else when PROFILER == "spall" {
+spall._buffer_begin(&spall_ctx, &spall_buffer, name, "", loc)
+}
+}
 
 
 
