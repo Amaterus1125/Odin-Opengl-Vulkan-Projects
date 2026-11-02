@@ -54,5 +54,15 @@ name : string ,
 start : time.Tick , 
 } 
 // totals for the every block with same name 
+@(private = "file") Block_Stat :: struct { 
+total : time.Duration 
+max: time.Duration , 
+count : int , 
+} 
+@(private = "file") open_blocks: [dynamic]Open_Block // acts as a stack, so blocks can nest
+@(private = "file") block_stats: map[string]Block_Stat
+@(private = "file") frame_count: int
+}
+
 
 
