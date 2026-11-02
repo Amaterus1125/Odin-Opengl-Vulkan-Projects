@@ -116,7 +116,23 @@ spall._buffer_begin(&spall_ctx, &spall_buffer, name, "", loc)
 }
 }
 
-
+// EASY_END_BLOCK - 
+@(disable = PROFILER == "none") 
+profiler_block_end :: proc() { 
+when PROFILER == "console" {
+block := pop(&open_blocks) 
+elasped := time.tick_diff(block.start , time.tick_now()) 
+stat := block_stats[block.name] //zeroed if this is the first time 
+stat.total += elasped 
+stat.max = max(stat.max , elasped) 
+stat.count += 1 
+block_stats[block.name] = stat } 
+else when PROFILER == "tracy" {
+tracy.ZoneEnd(pop(&stracy_zones) ) 
+} else when PROFILER == "spall" { 
+spall._buffer_end(&spall_ctx , &spall_buffer) 
+} 
+} 
 
 
 
