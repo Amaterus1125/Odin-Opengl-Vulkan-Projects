@@ -64,5 +64,16 @@ count : int ,
 @(private = "file") frame_count: int
 }
 
+when PROFILER == "tracy" { 
+	// Tracy's begin gives back a "zone" handle that the matching end needs,so we keep open zones on a stack (blocks nest, so last begun = first ended)
+#assert(tracy.TRACY_ENABLE, "PROFILER = tracy also needs -define:TRACY_ENABLR= true , otherwise tracy records nothing") 
+@(private = "file") tracy_zones : [dynamic]tracy.ZoneCtx
+} 
+
+when PROFILER == "spall" { 
+@(private = "file") spall_ctx : spall.Context 
+@(private = "file" ) spall_backing :[]u8   //memory the events are buffered in before writing 
+@(private = "file") @(thread_local) spall_buffer: spall.Buffer
+}
 
 
