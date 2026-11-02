@@ -1,4 +1,4 @@
-// A PROFILER WRAPPER YOU CAN SWITCH AT BUILD TIME
+// A PROFILER WRAPPER YOU CAN SWITCH AT BUILD TIME and profielrs are used for optimisation purposes , basically u can tell what block of code is causing you CPU or GPU bottlenecks and you can fix them later 
 /* Needs at the top of the file:
 import "core:fmt"
 import "core:slice"
@@ -38,4 +38,21 @@ Magenta = 0xFF00FF,
 Green   = 0x00FF00,
 Red     = 0xFF0000,
 }
+
+// PART 2 - Backend state , only the chosen backend data exist 
+//keep every impord used even for the backends not selected (otherwise building with -vet complains about unused imports ) 
+_fmt_anchor :: fmt.info 
+_slice_anchor :: slice.sort_by 
+_sync_anchor :: sync.current_thread_id 
+_time_anchor:: time.Tick 
+_spall_anchor :: spall.BUFFER_DEFAULT_SIZE
+
+when PROFILER == "console" { 
+// a block that has started but not ended yet 
+@(private = "file") Open_Block :: struct { 
+name : string , 
+start : time.Tick , 
+} 
+// totals for the every block with same name 
+
 
