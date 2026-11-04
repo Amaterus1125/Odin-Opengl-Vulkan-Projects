@@ -134,7 +134,12 @@ spall._buffer_end(&spall_ctx , &spall_buffer)
 } 
 } 
 
-
+// the SCOPED form. The book's EasyProfiler blocks close themselves when the scope ends (C++ RAII); Optick needed a wrapper class for that. In Odin,`deferred_in` does it - calling profile_scope("x") runs the matching "end" proc automatically when the surrounding scope exits. 
+@(disabled = PROFILER == "none")
+@(deferred_in = profile_scope_end)
+profile_scope :: proc(name: string, color: Profiler_Color = .Green, loc := #caller_location) {
+profile_block_begin(name, color, loc)
+}
 
 
 
